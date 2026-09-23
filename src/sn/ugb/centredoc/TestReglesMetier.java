@@ -62,7 +62,7 @@ public class TestReglesMetier {
         System.out.println("\n2. Test authentification Étudiant (sans mot de passe) :");
         Etudiant etuConnecte = null;
         try {
-            etuConnecte = authService.authentifierEtudiant("Ibrahima", "SOW", "ibrahima.sow@ugb.edu.sn", "P28-2023-0145");
+            etuConnecte = authService.authentifierEtudiant("Ibrahima", "SOW", "ibrahima.sow@ugb.edu.sn", "P28 0145");
             affirmer(etuConnecte != null && etuConnecte.getRole() == Role.ETUDIANT,
                     "Étudiant Ibrahima SOW authentifié avec succès sans mot de passe.");
         } catch (Exception e) {

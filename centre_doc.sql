@@ -96,9 +96,9 @@ INSERT INTO utilisateurs (id_utilisateur, nom, prenom, email, mot_de_passe, role
 (2, 'DIAKHAME', 'Moussa', 'moussa.diakhame@ugb.edu.sn', 'pass123', 'GESTIONNAIRE', 1, NULL),
 (3, 'DIALLO', 'Aminata', 'aminata.diallo@ugb.edu.sn', 'pass123', 'GESTIONNAIRE', 3, NULL),
 (4, 'FALL', 'Cheikh', 'cheikh.fall@ugb.edu.sn', 'pass123', 'GESTIONNAIRE', 2, NULL),
-(5, 'SOW', 'Ibrahima', 'ibrahima.sow@ugb.edu.sn', NULL, 'ETUDIANT', 1, 'P28-2023-0145'),
-(6, 'NDIAYE', 'Fatou', 'fatou.ndiaye@ugb.edu.sn', NULL, 'ETUDIANT', 3, 'P29-2024-0089'),
-(7, 'BA', 'Mamadou', 'mamadou.ba@ugb.edu.sn', NULL, 'ETUDIANT', 2, 'P27-2022-0312');
+(5, 'SOW', 'Ibrahima', 'ibrahima.sow@ugb.edu.sn', NULL, 'ETUDIANT', 1, 'P28 0145'),
+(6, 'NDIAYE', 'Fatou', 'fatou.ndiaye@ugb.edu.sn', NULL, 'ETUDIANT', 3, 'P29 0089'),
+(7, 'BA', 'Mamadou', 'mamadou.ba@ugb.edu.sn', NULL, 'ETUDIANT', 2, 'P27 0312');
 
 -- 3. Insertion des documents (Thèses et Mémoires avec divers niveaux d'accès)
 INSERT INTO documents (id_document, titre, auteur, encadrant, annee, type, id_ufr, discipline, resume, mots_cles, chemin_pdf, niveau_acces) VALUES

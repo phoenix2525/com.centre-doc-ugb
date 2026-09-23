@@ -73,11 +73,11 @@ B. GESTIONNAIRES DE CENTRE DE DOCUMENTATION :
 
 C. ETUDIANTS (Connexion SANS mot de passe) :
    - Etudiant SAT :
-     Prenom : Ibrahima | Nom : SOW | Email : ibrahima.sow@ugb.edu.sn | Code : P28-2023-0145
+     Prenom : Ibrahima | Nom : SOW | Email : ibrahima.sow@ugb.edu.sn | Code : P28 0145
    - Etudiante SEG :
-     Prenom : Fatou | Nom : NDIAYE | Email : fatou.ndiaye@ugb.edu.sn | Code : P29-2024-0089
+     Prenom : Fatou | Nom : NDIAYE | Email : fatou.ndiaye@ugb.edu.sn | Code : P29 0089
    - Etudiant SJP :
-     Prenom : Mamadou | Nom : BA | Email : mamadou.ba@ugb.edu.sn | Code : P27-2022-0312
+     Prenom : Mamadou | Nom : BA | Email : mamadou.ba@ugb.edu.sn | Code : P27 0312
 
 
 5. INSTRUCTIONS DE COMPILATION ET D'EXECUTION

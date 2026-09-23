@@ -87,8 +87,8 @@ public class GestionnaireDashboard extends JFrame {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(UIUtils.FONT_SOUS_TITRE);
 
-        tabbedPane.addTab("📚 Thèses et Mémoires de l'UFR", creerOngletFonds());
-        tabbedPane.addTab("📥 Historique des Téléchargements UFR", creerOngletHistorique());
+        tabbedPane.addTab("Theses et Memoires de l'UFR", creerOngletFonds());
+        tabbedPane.addTab("Historique des Telechargements UFR", creerOngletHistorique());
 
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -127,7 +127,7 @@ public class GestionnaireDashboard extends JFrame {
         JPanel actionsRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actionsRight.setOpaque(false);
 
-        JButton btnAjouter = UIUtils.creerBoutonAccent("➕ Déposer une Thèse / un Mémoire");
+        JButton btnAjouter = UIUtils.creerBoutonAccent("+ Deposer une These / un Memoire");
         btnAjouter.addActionListener(e -> ouvrirDialogueDocument(null));
         actionsRight.add(btnAjouter);
 
@@ -183,45 +183,63 @@ public class GestionnaireDashboard extends JFrame {
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setBackground(UIUtils.BLANC);
-        content.setBorder(new EmptyBorder(12, 14, 12, 14));
+        content.setBorder(new EmptyBorder(14, 16, 12, 16));
 
-        lblApercuTitre = new JLabel("Sélectionnez un document");
-        lblApercuTitre.setFont(UIUtils.FONT_SOUS_TITRE);
+        // Titre du document
+        lblApercuTitre = new JLabel("Selectionnez un document");
+        lblApercuTitre.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblApercuTitre.setForeground(UIUtils.BLEU_UGB);
+        lblApercuTitre.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuTitre);
+        content.add(Box.createVerticalStrut(10));
+        content.add(UIUtils.creerSeparateur());
         content.add(Box.createVerticalStrut(8));
 
-        lblApercuType = new JLabel("—");
+        // Metadonnees
+        content.add(UIUtils.creerLabelSection("Type & Auteur"));
+        lblApercuType = new JLabel("--");
         lblApercuType.setFont(UIUtils.FONT_NORMAL);
+        lblApercuType.setForeground(UIUtils.TEXTE_FONCE);
+        lblApercuType.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuType);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(3));
 
-        lblApercuAuteur = new JLabel("Auteur : —");
+        lblApercuAuteur = new JLabel("Auteur : --");
         lblApercuAuteur.setFont(UIUtils.FONT_NORMAL);
+        lblApercuAuteur.setForeground(UIUtils.TEXTE_FONCE);
+        lblApercuAuteur.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuAuteur);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(3));
 
-        lblApercuEncadrant = new JLabel("Directeur : —");
+        lblApercuEncadrant = new JLabel("Directeur : --");
         lblApercuEncadrant.setFont(UIUtils.FONT_NORMAL);
+        lblApercuEncadrant.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        lblApercuEncadrant.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuEncadrant);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(8));
+        content.add(UIUtils.creerSeparateur());
+        content.add(Box.createVerticalStrut(6));
 
-        lblApercuAnneeDiscipline = new JLabel("Année / Discipline : —");
+        content.add(UIUtils.creerLabelSection("Annee & Discipline"));
+        lblApercuAnneeDiscipline = new JLabel("-- | --");
         lblApercuAnneeDiscipline.setFont(UIUtils.FONT_NORMAL);
+        lblApercuAnneeDiscipline.setForeground(UIUtils.TEXTE_FONCE);
+        lblApercuAnneeDiscipline.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuAnneeDiscipline);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(6));
 
-        lblApercuAcces = new JLabel("Niveau d'accès : —");
-        lblApercuAcces.setFont(UIUtils.FONT_NORMAL);
+        content.add(UIUtils.creerLabelSection("Niveau d'acces"));
+        lblApercuAcces = new JLabel("--");
+        lblApercuAcces.setFont(UIUtils.FONT_GRAS);
+        lblApercuAcces.setForeground(UIUtils.BLEU_UGB);
+        lblApercuAcces.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuAcces);
-        content.add(Box.createVerticalStrut(10));
+        content.add(Box.createVerticalStrut(8));
+        content.add(UIUtils.creerSeparateur());
+        content.add(Box.createVerticalStrut(6));
 
-        JLabel lblResTitre = new JLabel("Résumé : ");
-        lblResTitre.setFont(UIUtils.FONT_GRAS);
-        content.add(lblResTitre);
-        content.add(Box.createVerticalStrut(4));
-
-        txtApercuResume = new JTextArea("Aucun document sélectionné.", 7, 24);
+        content.add(UIUtils.creerLabelSection("Resume analytique"));
+        txtApercuResume = new JTextArea("Aucun document selectionne.", 6, 24);
         txtApercuResume.setFont(UIUtils.FONT_NORMAL);
         txtApercuResume.setForeground(UIUtils.TEXTE_FONCE);
         txtApercuResume.setDisabledTextColor(UIUtils.TEXTE_FONCE);
@@ -229,37 +247,40 @@ public class GestionnaireDashboard extends JFrame {
         txtApercuResume.setWrapStyleWord(true);
         txtApercuResume.setEditable(false);
         txtApercuResume.setBackground(new Color(248, 250, 252));
-        txtApercuResume.setBorder(new EmptyBorder(6, 6, 6, 6));
+        txtApercuResume.setBorder(new EmptyBorder(6, 8, 6, 8));
         JScrollPane scrollRes = new JScrollPane(txtApercuResume);
+        scrollRes.setAlignmentX(Component.LEFT_ALIGNMENT);
+        scrollRes.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
         content.add(scrollRes);
-        content.add(Box.createVerticalStrut(8));
+        content.add(Box.createVerticalStrut(6));
 
-        lblApercuMotsCles = new JLabel("Mots-clés : —");
+        lblApercuMotsCles = new JLabel("Mots-cles : --");
         lblApercuMotsCles.setFont(UIUtils.FONT_PETIT);
         lblApercuMotsCles.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        lblApercuMotsCles.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuMotsCles);
 
-        wrapper.add(content, BorderLayout.CENTER);
+        wrapper.add(new JScrollPane(content, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER), BorderLayout.CENTER);
 
-        // Boutons d'action sur le document sélectionné
+        // Boutons d'action
         JPanel bottomActions = new JPanel(new GridLayout(2, 1, 6, 6));
         bottomActions.setBackground(UIUtils.BLANC);
         bottomActions.setBorder(new EmptyBorder(8, 12, 12, 12));
 
-        btnApercuModifier = UIUtils.creerBoutonAccent("✏️ Modifier ce document");
+        btnApercuModifier = UIUtils.creerBoutonAccent("Modifier ce document");
         btnApercuModifier.setEnabled(false);
         btnApercuModifier.addActionListener(e -> {
             if (documentSelectionne != null) ouvrirDialogueDocument(documentSelectionne);
         });
         bottomActions.add(btnApercuModifier);
 
-        btnApercuSupprimer = UIUtils.creerBoutonDanger("🗑️ Supprimer du fonds");
+        btnApercuSupprimer = UIUtils.creerBoutonDanger("Supprimer du fonds");
         btnApercuSupprimer.setEnabled(false);
         btnApercuSupprimer.addActionListener(e -> supprimerDocumentSelectionne());
         bottomActions.add(btnApercuSupprimer);
 
         wrapper.add(bottomActions, BorderLayout.SOUTH);
-
         return wrapper;
     }
 

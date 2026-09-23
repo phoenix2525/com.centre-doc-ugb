@@ -63,15 +63,15 @@ public class DataStore {
         utilisateurs.put(gSJP.getIdUtilisateur(), gSJP);
 
         // Étudiants (sans mot de passe)
-        Etudiant e1 = new Etudiant(5, "SOW", "Ibrahima", "ibrahima.sow@ugb.edu.sn", "P28-2023-0145", 1);
+        Etudiant e1 = new Etudiant(5, "SOW", "Ibrahima", "ibrahima.sow@ugb.edu.sn", "P28 0145", 1);
         e1.setNomUfr("Sciences Appliquées et de Technologie");
         utilisateurs.put(e1.getIdUtilisateur(), e1);
 
-        Etudiant e2 = new Etudiant(6, "NDIAYE", "Fatou", "fatou.ndiaye@ugb.edu.sn", "P29-2024-0089", 3);
+        Etudiant e2 = new Etudiant(6, "NDIAYE", "Fatou", "fatou.ndiaye@ugb.edu.sn", "P29 0089", 3);
         e2.setNomUfr("Sciences Économiques et de Gestion");
         utilisateurs.put(e2.getIdUtilisateur(), e2);
 
-        Etudiant e3 = new Etudiant(7, "BA", "Mamadou", "mamadou.ba@ugb.edu.sn", "P27-2022-0312", 2);
+        Etudiant e3 = new Etudiant(7, "BA", "Mamadou", "mamadou.ba@ugb.edu.sn", "P27 0312", 2);
         e3.setNomUfr("Sciences Juridiques et Politiques");
         utilisateurs.put(e3.getIdUtilisateur(), e3);
 

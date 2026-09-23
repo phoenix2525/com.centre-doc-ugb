@@ -102,8 +102,8 @@ public class EtudiantDashboard extends JFrame {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(UIUtils.FONT_SOUS_TITRE);
 
-        tabbedPane.addTab("🔍 Recherche & Consultation du Fonds", creerOngletRecherche());
-        tabbedPane.addTab("📥 Mon Historique de Téléchargements", creerOngletHistorique());
+        tabbedPane.addTab("Recherche & Consultation", creerOngletRecherche());
+        tabbedPane.addTab("Historique des telechargements", creerOngletHistorique());
 
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -215,56 +215,76 @@ public class EtudiantDashboard extends JFrame {
     private JPanel creerVoletApercu() {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(UIUtils.BLANC);
-        wrapper.setBorder(UIUtils.creerBordureCarte("Fiche Descriptive Détaillée"));
+        wrapper.setBorder(UIUtils.creerBordureCarte("Fiche Descriptive Detaillee"));
         wrapper.setPreferredSize(new Dimension(400, 0));
 
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setBackground(UIUtils.BLANC);
-        content.setBorder(new EmptyBorder(12, 14, 12, 14));
+        content.setBorder(new EmptyBorder(14, 16, 12, 16));
 
-        lblApercuTitre = new JLabel("Sélectionnez un document");
-        lblApercuTitre.setFont(UIUtils.FONT_SOUS_TITRE);
+        lblApercuTitre = new JLabel("Selectionnez un document");
+        lblApercuTitre.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblApercuTitre.setForeground(UIUtils.BLEU_UGB);
+        lblApercuTitre.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuTitre);
+        content.add(Box.createVerticalStrut(10));
+        content.add(UIUtils.creerSeparateur());
         content.add(Box.createVerticalStrut(8));
 
-        lblApercuType = new JLabel("Type : —");
+        content.add(UIUtils.creerLabelSection("Type & Auteur"));
+        lblApercuType = new JLabel("Type : --");
         lblApercuType.setFont(UIUtils.FONT_NORMAL);
+        lblApercuType.setForeground(UIUtils.TEXTE_FONCE);
+        lblApercuType.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuType);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(3));
 
-        lblApercuAuteur = new JLabel("Auteur : —");
+        lblApercuAuteur = new JLabel("Auteur : --");
         lblApercuAuteur.setFont(UIUtils.FONT_NORMAL);
+        lblApercuAuteur.setForeground(UIUtils.TEXTE_FONCE);
+        lblApercuAuteur.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuAuteur);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(3));
 
-        lblApercuEncadrant = new JLabel("Directeur de recherche : —");
+        lblApercuEncadrant = new JLabel("Directeur : --");
         lblApercuEncadrant.setFont(UIUtils.FONT_NORMAL);
+        lblApercuEncadrant.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        lblApercuEncadrant.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuEncadrant);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(8));
+        content.add(UIUtils.creerSeparateur());
+        content.add(Box.createVerticalStrut(6));
 
-        lblApercuAnneeDiscipline = new JLabel("Année / Discipline : —");
+        content.add(UIUtils.creerLabelSection("Details"));
+        lblApercuAnneeDiscipline = new JLabel("-- | --");
         lblApercuAnneeDiscipline.setFont(UIUtils.FONT_NORMAL);
+        lblApercuAnneeDiscipline.setForeground(UIUtils.TEXTE_FONCE);
+        lblApercuAnneeDiscipline.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuAnneeDiscipline);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(3));
 
-        lblApercuUfr = new JLabel("UFR : —");
+        lblApercuUfr = new JLabel("UFR : --");
         lblApercuUfr.setFont(UIUtils.FONT_NORMAL);
+        lblApercuUfr.setForeground(UIUtils.TEXTE_FONCE);
+        lblApercuUfr.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuUfr);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(8));
+        content.add(UIUtils.creerSeparateur());
+        content.add(Box.createVerticalStrut(6));
 
-        lblApercuAcces = new JLabel("Niveau d'accès : —");
-        lblApercuAcces.setFont(UIUtils.FONT_NORMAL);
+        content.add(UIUtils.creerLabelSection("Niveau d'acces"));
+        lblApercuAcces = new JLabel("--");
+        lblApercuAcces.setFont(UIUtils.FONT_GRAS);
+        lblApercuAcces.setForeground(UIUtils.BLEU_UGB);
+        lblApercuAcces.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuAcces);
-        content.add(Box.createVerticalStrut(10));
+        content.add(Box.createVerticalStrut(8));
+        content.add(UIUtils.creerSeparateur());
+        content.add(Box.createVerticalStrut(6));
 
-        JLabel lblResTitre = new JLabel("Résumé du document :");
-        lblResTitre.setFont(UIUtils.FONT_GRAS);
-        content.add(lblResTitre);
-        content.add(Box.createVerticalStrut(4));
-
-        txtApercuResume = new JTextArea("Veuillez sélectionner un document dans le tableau de gauche pour consulter son résumé complet.", 8, 26);
+        content.add(UIUtils.creerLabelSection("Resume du document"));
+        txtApercuResume = new JTextArea("Veuillez selectionner un document dans le tableau de gauche.", 7, 26);
         txtApercuResume.setFont(UIUtils.FONT_NORMAL);
         txtApercuResume.setForeground(UIUtils.TEXTE_FONCE);
         txtApercuResume.setDisabledTextColor(UIUtils.TEXTE_FONCE);
@@ -272,19 +292,23 @@ public class EtudiantDashboard extends JFrame {
         txtApercuResume.setWrapStyleWord(true);
         txtApercuResume.setEditable(false);
         txtApercuResume.setBackground(new Color(248, 250, 252));
-        txtApercuResume.setBorder(new EmptyBorder(6, 6, 6, 6));
+        txtApercuResume.setBorder(new EmptyBorder(6, 8, 6, 8));
         JScrollPane scrollRes = new JScrollPane(txtApercuResume);
+        scrollRes.setAlignmentX(Component.LEFT_ALIGNMENT);
+        scrollRes.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
         content.add(scrollRes);
-        content.add(Box.createVerticalStrut(8));
+        content.add(Box.createVerticalStrut(6));
 
-        lblApercuMotsCles = new JLabel("Mots-clés : —");
+        lblApercuMotsCles = new JLabel("Mots-cles : --");
         lblApercuMotsCles.setFont(UIUtils.FONT_PETIT);
         lblApercuMotsCles.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        lblApercuMotsCles.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblApercuMotsCles);
 
-        wrapper.add(content, BorderLayout.CENTER);
+        wrapper.add(new JScrollPane(content, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER), BorderLayout.CENTER);
 
-        // Actions de téléchargement
+        // Zone de telechargement
         JPanel bottomActions = new JPanel(new BorderLayout(0, 6));
         bottomActions.setBackground(UIUtils.BLANC);
         bottomActions.setBorder(new EmptyBorder(8, 14, 14, 14));
@@ -293,7 +317,7 @@ public class EtudiantDashboard extends JFrame {
         lblApercuAvertissement.setFont(UIUtils.FONT_PETIT);
         bottomActions.add(lblApercuAvertissement, BorderLayout.NORTH);
 
-        btnApercuTelecharger = UIUtils.creerBoutonPrimaire("⬇️ Télécharger le document PDF");
+        btnApercuTelecharger = UIUtils.creerBoutonPrimaire("Telecharger le document PDF");
         btnApercuTelecharger.setEnabled(false);
         btnApercuTelecharger.addActionListener(e -> {
             if (documentSelectionne != null) {
@@ -303,7 +327,6 @@ public class EtudiantDashboard extends JFrame {
         bottomActions.add(btnApercuTelecharger, BorderLayout.CENTER);
 
         wrapper.add(bottomActions, BorderLayout.SOUTH);
-
         return wrapper;
     }
 
@@ -322,7 +345,7 @@ public class EtudiantDashboard extends JFrame {
             lblApercuMotsCles.setText("Mots-clés : —");
             lblApercuAvertissement.setText("");
             btnApercuTelecharger.setEnabled(false);
-            btnApercuTelecharger.setText("⬇️ Télécharger le document PDF");
+            btnApercuTelecharger.setText("Telecharger le document PDF");
             return;
         }
 

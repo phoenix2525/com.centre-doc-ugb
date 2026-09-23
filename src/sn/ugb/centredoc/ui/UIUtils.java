@@ -75,6 +75,7 @@ public class UIUtils {
     public static final Font FONT_GRAS = new Font("Segoe UI", Font.BOLD, 13);
     public static final Font FONT_BADGE = new Font("Segoe UI", Font.BOLD, 11);
     public static final Font FONT_PETIT = new Font("Segoe UI", Font.PLAIN, 11);
+    public static final Font FONT_HERO = new Font("Segoe UI", Font.BOLD, 28);
 
     /**
      * Initialise les propriétés graphiques globales de Swing (UIManager) pour garantir
@@ -330,7 +331,7 @@ public class UIUtils {
         bandeau.add(textePanel, BorderLayout.WEST);
 
         if (infoUtilisateur != null) {
-            JLabel lblUser = new JLabel("👤 " + infoUtilisateur);
+            JLabel lblUser = new JLabel("[U] " + infoUtilisateur);
             lblUser.setFont(FONT_GRAS);
             lblUser.setForeground(new Color(255, 235, 175));
             bandeau.add(lblUser, BorderLayout.EAST);
@@ -510,5 +511,144 @@ public class UIUtils {
                 dialog.dispose();
             }
         });
+    }
+    /**
+     * Separateur horizontal leger pour structurer les formulaires et volets.
+     */
+    public static JSeparator creerSeparateur() {
+        JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
+        sep.setForeground(BORDURE_DOUCE);
+        sep.setBackground(FOND_CLAIR);
+        return sep;
+    }
+
+    /**
+     * Label de titre de section stylise (petite majuscule bleue UGB + espacement).
+     */
+    public static JLabel creerLabelSection(String texte) {
+        JLabel lbl = new JLabel(texte.toUpperCase());
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        lbl.setForeground(BLEU_SECONDAIRE);
+        lbl.setBorder(new EmptyBorder(6, 0, 2, 0));
+        return lbl;
+    }
+
+    /**
+     * Cree une carte statistique avec une bande coloree en haut (accent moderne).
+     * @param titre         Libelle de la carte
+     * @param valeur        Label de la valeur principale
+     * @param couleurAccent Couleur de l'accent en haut
+     */
+    public static JPanel creerCarteStatAvecAccent(String titre, JLabel valeur, Color couleurAccent) {
+        JPanel carte = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Ombre portee legere
+                g2.setColor(new Color(0, 0, 0, 12));
+                g2.fillRoundRect(3, 5, getWidth() - 4, getHeight() - 4, 10, 10);
+                // Fond blanc
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 5, 10, 10);
+                g2.dispose();
+            }
+        };
+        carte.setOpaque(false);
+        carte.setBorder(new EmptyBorder(0, 0, 6, 6));
+
+        // Bande d'accent en haut
+        JPanel accent = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(couleurAccent);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight() + 10, 10, 10);
+                g2.dispose();
+            }
+        };
+        accent.setPreferredSize(new Dimension(0, 5));
+        accent.setOpaque(false);
+        carte.add(accent, BorderLayout.NORTH);
+
+        JPanel corps = new JPanel(new BorderLayout());
+        corps.setOpaque(false);
+        corps.setBorder(new EmptyBorder(10, 14, 12, 14));
+
+        JLabel lblTitre = new JLabel(titre);
+        lblTitre.setFont(FONT_GRAS);
+        lblTitre.setForeground(TEXTE_SECONDAIRE);
+        corps.add(lblTitre, BorderLayout.NORTH);
+
+        valeur.setFont(new Font("Segoe UI", Font.BOLD, 34));
+        valeur.setForeground(couleurAccent);
+        valeur.setHorizontalAlignment(SwingConstants.LEFT);
+        corps.add(valeur, BorderLayout.CENTER);
+
+        carte.add(corps, BorderLayout.CENTER);
+        return carte;
+    }
+
+    /**
+     * Cree un label de champ de formulaire (en haut, petit, bleu).
+     */
+    public static JLabel creerLabelChamp(String texte) {
+        JLabel lbl = new JLabel(texte);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lbl.setForeground(TEXTE_SECONDAIRE);
+        return lbl;
+    }
+
+    /**
+     * Cree un badge de niveau d'acces proeminent (grand, centre, avec symbole ASCII).
+     */
+    public static JPanel creerBadgeAccesProeminent(String niveauAcces) {
+        JPanel badge = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
+        badge.setOpaque(true);
+
+        Color bgColor;
+        Color fgColor;
+        String symbole;
+        String libelle;
+
+        switch (niveauAcces.toUpperCase()) {
+            case "TELECHARGEABLE":
+                bgColor = new Color(220, 245, 225);
+                fgColor = new Color(15, 105, 45);
+                symbole = "[+]";
+                libelle = "TELECHARGEABLE";
+                break;
+            case "CONSULTATION_SEULE":
+                bgColor = new Color(225, 238, 254);
+                fgColor = new Color(15, 80, 175);
+                symbole = "[o]";
+                libelle = "CONSULTATION SEULE";
+                break;
+            case "RESTREINT":
+                bgColor = new Color(254, 236, 224);
+                fgColor = new Color(175, 50, 10);
+                symbole = "[x]";
+                libelle = "ACCES RESTREINT";
+                break;
+            default:
+                bgColor = FOND_CLAIR;
+                fgColor = TEXTE_SECONDAIRE;
+                symbole = "[ ]";
+                libelle = niveauAcces;
+        }
+
+        badge.setBackground(bgColor);
+        badge.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(fgColor.brighter(), 1, true),
+                new EmptyBorder(4, 10, 4, 10)
+        ));
+
+        JLabel lbl = new JLabel(symbole + " " + libelle);
+        lbl.setFont(FONT_GRAS);
+        lbl.setForeground(fgColor);
+        badge.add(lbl);
+        return badge;
     }
 }

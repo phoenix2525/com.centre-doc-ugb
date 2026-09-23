@@ -93,9 +93,9 @@ public class AdminDashboard extends JFrame {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(UIUtils.FONT_SOUS_TITRE);
 
-        tabbedPane.addTab("👤 Gestion des Gestionnaires", creerOngletGestionnaires());
-        tabbedPane.addTab("📋 Annuaire & Recherche Utilisateurs", creerOngletAnnuaire());
-        tabbedPane.addTab("📊 Statistiques, Graphiques 2D & Export", creerOngletStatistiques());
+        tabbedPane.addTab("Gestion des Gestionnaires", creerOngletGestionnaires());
+        tabbedPane.addTab("Annuaire & Recherche", creerOngletAnnuaire());
+        tabbedPane.addTab("Statistiques & Export", creerOngletStatistiques());
 
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -176,15 +176,15 @@ public class AdminDashboard extends JFrame {
         btnNouveau.addActionListener(e -> viderFormulaireGestionnaire());
         actions.add(btnNouveau);
 
-        JButton btnAjouter = UIUtils.creerBoutonPrimaire("➕ Ajouter ce gestionnaire");
+        JButton btnAjouter = UIUtils.creerBoutonPrimaire("+ Ajouter ce gestionnaire");
         btnAjouter.addActionListener(e -> ajouterGestionnaire());
         actions.add(btnAjouter);
 
-        JButton btnModifier = UIUtils.creerBoutonAccent("✏️ Enregistrer les modifications");
+        JButton btnModifier = UIUtils.creerBoutonAccent("Enregistrer les modifications");
         btnModifier.addActionListener(e -> modifierGestionnaire());
         actions.add(btnModifier);
 
-        JButton btnSupprimer = UIUtils.creerBoutonDanger("🗑️ Supprimer ce compte");
+        JButton btnSupprimer = UIUtils.creerBoutonDanger("Supprimer ce compte");
         btnSupprimer.addActionListener(e -> supprimerGestionnaire());
         actions.add(btnSupprimer);
 
@@ -229,7 +229,7 @@ public class AdminDashboard extends JFrame {
         });
         filtrePanel.add(btnReset);
 
-        JButton btnNouvelEtudiant = UIUtils.creerBoutonAccent("🎓 + Inscrire un Étudiant");
+        JButton btnNouvelEtudiant = UIUtils.creerBoutonAccent("+ Inscrire un Etudiant");
         btnNouvelEtudiant.addActionListener(e -> ouvrirDialogueAjoutEtudiant());
         filtrePanel.add(btnNouvelEtudiant);
 

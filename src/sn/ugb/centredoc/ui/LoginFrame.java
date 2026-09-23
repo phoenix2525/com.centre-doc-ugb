@@ -281,7 +281,7 @@ public class LoginFrame extends JFrame {
             txtEtuPrenom.setText("Ibrahima");
             txtEtuNom.setText("SOW");
             txtEtuEmail.setText("ibrahima.sow@ugb.edu.sn");
-            txtEtuCode.setText("P28-2023-0145");
+            txtEtuCode.setText("P28 0145");
         });
         raccourcis.add(btnDemo1);
 
@@ -291,7 +291,7 @@ public class LoginFrame extends JFrame {
             txtEtuPrenom.setText("Fatou");
             txtEtuNom.setText("NDIAYE");
             txtEtuEmail.setText("fatou.ndiaye@ugb.edu.sn");
-            txtEtuCode.setText("P29-2024-0089");
+            txtEtuCode.setText("P29 0089");
         });
         raccourcis.add(btnDemo2);
 
