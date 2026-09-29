@@ -20,16 +20,16 @@ public class SimpleChartPanel extends JPanel {
     private String titre;
     private Map<String, Integer> donnees;
 
-    // Palette harmonieuse de couleurs pour les secteurs / barres
+    // Palette harmonieuse et lumineuse de couleurs pour les secteurs / barres
     private static final Color[] COULEURS = {
-            new Color(10, 45, 95),    // Bleu institutionnel UGB
-            new Color(212, 160, 23),  // Or UGB
-            new Color(40, 167, 69),   // Vert
-            new Color(23, 162, 184),  // Cyan
-            new Color(111, 66, 193),  // Indigo / Violet
-            new Color(253, 126, 20),  // Orange
-            new Color(220, 53, 69),   // Rouge
-            new Color(32, 201, 151)   // Émeraude
+            UIUtils.BLEU_UGB,         // #1565C0 - Bleu UGB
+            UIUtils.OR_UGB,           // #F9A825 - Ambre chaud UGB
+            UIUtils.ACCENT_EMERAUDE,  // #00897B - Émeraude académique
+            new Color(30, 136, 229),  // #1E88E5 - Bleu ciel moderne
+            new Color(142, 36, 170),  // #8E24AA - Violet / Indigo
+            new Color(251, 140, 0),   // #FB8C00 - Orange chaleureux
+            UIUtils.VERT_SUCCES,      // #2E7D32 - Vert frais
+            UIUtils.ROUGE_DANGER      // #C62828 - Rouge corail
     };
 
     public SimpleChartPanel(String titre, TypeGraphique typeGraphique) {

@@ -1,5 +1,6 @@
 package sn.ugb.centredoc.ui;
 
+import sn.ugb.centredoc.dao.DAOFactory;
 import sn.ugb.centredoc.exception.*;
 import sn.ugb.centredoc.model.Role;
 import sn.ugb.centredoc.model.Ufr;
@@ -70,24 +71,23 @@ public class AdminDashboard extends JFrame {
         setLayout(new BorderLayout());
         getContentPane().setBackground(UIUtils.FOND_CLAIR);
 
-        // Bandeau haut avec bouton déconnexion
-        JPanel bandeau = UIUtils.creerBandeauHaut(
-                "Espace Administration Centrale",
-                "Gestion des comptes gestionnaires, des UFR et monitoring global",
-                utilisateurCourant.getNomComplet() + " (ADMIN)"
-        );
-
-        JButton btnDeconnexion = UIUtils.creerBoutonSecondaire("Déconnexion");
+        JButton btnDeconnexion = UIUtils.creerBoutonDanger("⏻ Déconnexion");
+        btnDeconnexion.setFont(UIUtils.FONT_PETIT);
         btnDeconnexion.addActionListener(e -> {
             new LoginFrame().setVisible(true);
             this.dispose();
         });
-        JPanel eastPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        eastPanel.setOpaque(false);
-        eastPanel.add(btnDeconnexion);
-        bandeau.add(eastPanel, BorderLayout.EAST);
 
-        add(bandeau, BorderLayout.NORTH);
+        // TopBar Stitch
+        JPanel topBar = UIUtils.creerTopBarStitch(
+                "Système d'Information Doc UGB",
+                "GOUVERNANCE CENTRALE & MONITORING",
+                "Supervision Admin",
+                utilisateurCourant.getNomComplet(),
+                DAOFactory.isUsingJdbc(),
+                btnDeconnexion
+        );
+        add(topBar, BorderLayout.NORTH);
 
         // Onglets
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -263,9 +263,9 @@ public class AdminDashboard extends JFrame {
         lblTotalUsers = new JLabel("0", SwingConstants.CENTER);
         lblTotalTelechargements = new JLabel("0", SwingConstants.CENTER);
 
-        cartesPanel.add(creerCarteStat("📚 Fonds Documentaire", lblTotalDocs));
-        cartesPanel.add(creerCarteStat("👥 Utilisateurs Inscrits", lblTotalUsers));
-        cartesPanel.add(creerCarteStat("⬇️ Téléchargements Totaux", lblTotalTelechargements));
+        cartesPanel.add(UIUtils.creerCarteStatAvecAccent("📚 Fonds Documentaire", lblTotalDocs, UIUtils.BLEU_UGB));
+        cartesPanel.add(UIUtils.creerCarteStatAvecAccent("👥 Utilisateurs Inscrits", lblTotalUsers, UIUtils.ACCENT_EMERAUDE));
+        cartesPanel.add(UIUtils.creerCarteStatAvecAccent("⬇️ Téléchargements Totaux", lblTotalTelechargements, UIUtils.OR_UGB));
 
         panel.add(cartesPanel, BorderLayout.NORTH);
 

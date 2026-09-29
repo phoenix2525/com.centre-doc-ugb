@@ -73,30 +73,30 @@ public class EtudiantDashboard extends JFrame {
 
     private void initUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1140, 780);
+        setSize(1180, 800);
+        setMinimumSize(new Dimension(1040, 720));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         getContentPane().setBackground(UIUtils.FOND_CLAIR);
 
-        // Bandeau haut
-        String infoEtu = etudiant.getNomComplet() + " (" + etudiant.getCodeEtudiant() + " — " + etudiant.getEmail() + ")";
-        JPanel bandeau = UIUtils.creerBandeauHaut(
-                "Centre de Documentation Numérique — UGB",
-                "Consultation et téléchargement des thèses et mémoires universitaires",
-                infoEtu
-        );
-
-        JButton btnDeconnexion = UIUtils.creerBoutonSecondaire("Déconnexion");
+        JButton btnDeconnexion = UIUtils.creerBoutonDanger("⏻ Déconnexion");
+        btnDeconnexion.setFont(UIUtils.FONT_PETIT);
         btnDeconnexion.addActionListener(e -> {
             new LoginFrame().setVisible(true);
             this.dispose();
         });
-        JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        east.setOpaque(false);
-        east.add(btnDeconnexion);
-        bandeau.add(east, BorderLayout.EAST);
 
-        add(bandeau, BorderLayout.NORTH);
+        // TopBar Stitch
+        String infoEtu = etudiant.getNomComplet() + " (" + etudiant.getCodeEtudiant() + ")";
+        JPanel topBar = UIUtils.creerTopBarStitch(
+                "Système d'Information Doc UGB",
+                "CATALOGUE DES THÈSES & MÉMOIRES",
+                "Catalogue Étudiant",
+                infoEtu,
+                DAOFactory.isUsingJdbc(),
+                btnDeconnexion
+        );
+        add(topBar, BorderLayout.NORTH);
 
         // Onglets principaux
         JTabbedPane tabbedPane = new JTabbedPane();

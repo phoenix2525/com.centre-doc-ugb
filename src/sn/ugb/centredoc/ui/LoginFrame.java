@@ -12,94 +12,509 @@ import sn.ugb.centredoc.service.AuthService;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.io.File;
 
 /**
- * Écran d'authentification du Système d'Information des Centres de Documentation (UGB).
- * Distingue clairement les flux :
- * - Étudiant : sans mot de passe (Prénom, Nom, Email UGB, Code Étudiant)
- * - Personnel (Admin / Gestionnaire) : Email UGB et Mot de passe
+ * Portail d'authentification institutionnel UGB Docs conforme aux spécifications Stitch
+ * (Academic Prestige & High-Density Rigor).
+ * Présente une disposition côte à côte (Master Cards) pour l'accès étudiant sans mot de passe
+ * et l'espace réservé au personnel universitaire et à l'administration.
  */
 public class LoginFrame extends JFrame {
     private final AuthService authService = new AuthService();
 
-    // Champs onglet Étudiant
+    // Champs Carte Étudiant
     private JTextField txtEtuPrenom;
     private JTextField txtEtuNom;
     private JTextField txtEtuEmail;
     private JTextField txtEtuCode;
 
-    // Champs onglet Personnel
+    // Champs Carte Personnel
     private JTextField txtPersoEmail;
     private JPasswordField txtPersoPass;
 
     private JLabel lblStatutBD;
 
     public LoginFrame() {
-        super("UGB — Système d'Information des Centres de Documentation");
+        super("UGB Docs — Portail Numérique des Thèses & Mémoires");
         initUI();
     }
 
     private void initUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(700, 640);
+        setSize(1080, 790);
+        setMinimumSize(new Dimension(980, 720));
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
-        getContentPane().setBackground(UIUtils.FOND_CLAIR);
 
-        // Bandeau supérieur
-        JPanel bandeau = UIUtils.creerBandeauHaut(
-                "Centres de Documentation de l'UGB",
-                "Gestion informatisée des thèses et mémoires par UFR (L3 Informatique / MIAGE)",
-                null
+        // Fond surface Stitch #F8F9FF avec dégradé subtil vers le blanc
+        JPanel backgroundPanel = new UIUtils.PanelDegrade(
+                new Color(248, 249, 255),
+                new Color(238, 244, 255),
+                true
         );
-        add(bandeau, BorderLayout.NORTH);
+        backgroundPanel.setLayout(new BorderLayout(0, 0));
+        setContentPane(backgroundPanel);
 
-        // Panneau central avec onglets
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(UIUtils.FONT_SOUS_TITRE);
+        // =====================================================================
+        // 1. Barre Institutionnelle Supérieure (Top Utility Bar Stitch)
+        // =====================================================================
+        JPanel topUtilityBar = new JPanel(new BorderLayout(14, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(UIUtils.BORDURE_DOUCE);
+                g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
+                g2.dispose();
+            }
+        };
+        topUtilityBar.setBackground(Color.WHITE);
+        topUtilityBar.setBorder(new EmptyBorder(8, 24, 8, 24));
+        topUtilityBar.setPreferredSize(new Dimension(0, 52));
 
-        tabbedPane.addTab("🎓 Espace Étudiant (Sans mot de passe)", creerOngletEtudiant());
-        tabbedPane.addTab("🔑 Personnel & Administration", creerOngletPersonnel());
+        // Gauche : Logo + Titre app
+        JPanel leftBrand = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftBrand.setOpaque(false);
 
-        JPanel centerWrapper = new JPanel(new BorderLayout());
-        centerWrapper.setBorder(new EmptyBorder(16, 20, 10, 20));
+        LogoUGB logoMini = new LogoUGB(34, 34);
+        leftBrand.add(logoMini);
+
+        JPanel brandText = new JPanel(new GridLayout(2, 1, 0, 1));
+        brandText.setOpaque(false);
+
+        JLabel lblBrandTitle = new JLabel("UGB Docs  v2.4");
+        lblBrandTitle.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblBrandTitle.setForeground(UIUtils.TEXTE_FONCE);
+
+        JLabel lblBrandSub = new JLabel("UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS");
+        lblBrandSub.setFont(new Font("Segoe UI", Font.BOLD, 9));
+        lblBrandSub.setForeground(UIUtils.TEXTE_GRIS);
+
+        brandText.add(lblBrandTitle);
+        brandText.add(lblBrandSub);
+        leftBrand.add(brandText);
+        topUtilityBar.add(leftBrand, BorderLayout.WEST);
+
+        // Droite : Mention officielle ministérielle
+        JPanel rightMinistry = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        rightMinistry.setOpaque(false);
+
+        JLabel lblMinistry = new JLabel("🇸🇳 RÉPUBLIQUE DU SÉNÉGAL • MESRI");
+        lblMinistry.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblMinistry.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        rightMinistry.add(lblMinistry);
+
+        topUtilityBar.add(rightMinistry, BorderLayout.EAST);
+        backgroundPanel.add(topUtilityBar, BorderLayout.NORTH);
+
+        // =====================================================================
+        // 2. Zone Centrale : Hero Banner institutionnel + Double Carte Stitch
+        // =====================================================================
+        JPanel centerWrapper = new JPanel();
+        centerWrapper.setLayout(new BoxLayout(centerWrapper, BoxLayout.Y_AXIS));
         centerWrapper.setOpaque(false);
-        centerWrapper.add(tabbedPane, BorderLayout.CENTER);
-        add(centerWrapper, BorderLayout.CENTER);
+        centerWrapper.setBorder(new EmptyBorder(14, 28, 12, 28));
 
-        // Bandeau inférieur : état de la base de données
-        JPanel footer = new JPanel(new BorderLayout(10, 0));
-        footer.setBackground(UIUtils.BLANC);
-        footer.setBorder(new EmptyBorder(10, 16, 10, 16));
+        // Sub-hero Pill + Titre principal
+        JPanel heroHeader = new JPanel();
+        heroHeader.setLayout(new BoxLayout(heroHeader, BoxLayout.Y_AXIS));
+        heroHeader.setOpaque(false);
+        heroHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Pill "Fonds Documentaire Numérique Institutionnel"
+        JPanel tagPill = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 4)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(224, 238, 255));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                g2.setColor(new Color(186, 214, 255));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        tagPill.setOpaque(false);
+        tagPill.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel lblTag = new JLabel("🛡 Fonds Documentaire Numérique Institutionnel");
+        lblTag.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblTag.setForeground(UIUtils.BLEU_UGB);
+        tagPill.add(lblTag);
+        heroHeader.add(tagPill);
+        heroHeader.add(Box.createRigidArea(new Dimension(0, 8)));
+
+        JLabel lblGrandTitre = new JLabel("Portail Numérique des Thèses & Mémoires Universitaires");
+        lblGrandTitre.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblGrandTitre.setForeground(UIUtils.TEXTE_FONCE);
+        lblGrandTitre.setAlignmentX(Component.CENTER_ALIGNMENT);
+        heroHeader.add(lblGrandTitre);
+        heroHeader.add(Box.createRigidArea(new Dimension(0, 4)));
+
+        JLabel lblSousTitre = new JLabel("Consultation académique ouverte et gestion décentralisée des productions de recherche des 8 UFR de l'UGB.");
+        lblSousTitre.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblSousTitre.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        lblSousTitre.setAlignmentX(Component.CENTER_ALIGNMENT);
+        heroHeader.add(lblSousTitre);
+        heroHeader.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        centerWrapper.add(heroHeader);
+
+        // Double Carte Côte à Côte Stitch
+        JPanel cardsContainer = new JPanel(new GridLayout(1, 2, 22, 0));
+        cardsContainer.setOpaque(false);
+        cardsContainer.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Carte 1 : Consultation Étudiante (Sans mot de passe)
+        JPanel cardEtudiant = creerCarteEtudiantStitch();
+        cardsContainer.add(cardEtudiant);
+
+        // Carte 2 : Administration & Enseignants (Identifiant + Mot de passe)
+        JPanel cardPersonnel = creerCartePersonnelStitch();
+        cardsContainer.add(cardPersonnel);
+
+        centerWrapper.add(cardsContainer);
+        backgroundPanel.add(centerWrapper, BorderLayout.CENTER);
+
+        // =====================================================================
+        // 3. Pied de Page Stitch : Raccourcis Démo + Statut BD & Footer
+        // =====================================================================
+        JPanel footerWrapper = new JPanel(new BorderLayout(0, 6));
+        footerWrapper.setOpaque(false);
+        footerWrapper.setBorder(new EmptyBorder(6, 28, 12, 28));
+
+        // Raccourcis rapides de test
+        JPanel barRaccourcis = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                g2.setColor(UIUtils.BORDURE_DOUCE);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        barRaccourcis.setOpaque(false);
+        barRaccourcis.setBorder(new EmptyBorder(4, 12, 4, 12));
+
+        JLabel lblRaccourcis = new JLabel("⚡ Accès rapide de démonstration :");
+        lblRaccourcis.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblRaccourcis.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        barRaccourcis.add(lblRaccourcis);
+
+        JButton btnDemoEtu1 = UIUtils.creerBoutonSecondaire("🎓 Étudiant : Ibrahima SOW (SAT)");
+        btnDemoEtu1.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnDemoEtu1.addActionListener(e -> {
+            txtEtuPrenom.setText("Ibrahima");
+            txtEtuNom.setText("SOW");
+            txtEtuEmail.setText("ibrahima.sow@ugb.edu.sn");
+            txtEtuCode.setText("P28 0145");
+        });
+        barRaccourcis.add(btnDemoEtu1);
+
+        JButton btnDemoEtu2 = UIUtils.creerBoutonSecondaire("🎓 Étudiante : Fatou NDIAYE (SEG)");
+        btnDemoEtu2.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnDemoEtu2.addActionListener(e -> {
+            txtEtuPrenom.setText("Fatou");
+            txtEtuNom.setText("NDIAYE");
+            txtEtuEmail.setText("fatou.ndiaye@ugb.edu.sn");
+            txtEtuCode.setText("P29 0089");
+        });
+        barRaccourcis.add(btnDemoEtu2);
+
+        JButton btnDemoGest = UIUtils.creerBoutonSecondaire("👨‍🏫 Gestionnaire : M. Diakhame (SAT)");
+        btnDemoGest.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnDemoGest.addActionListener(e -> {
+            txtPersoEmail.setText("moussa.diakhame@ugb.edu.sn");
+            txtPersoPass.setText("pass123");
+        });
+        barRaccourcis.add(btnDemoGest);
+
+        JButton btnDemoAdmin = UIUtils.creerBoutonSecondaire("🛡 Admin Central : Amadou DIOP");
+        btnDemoAdmin.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnDemoAdmin.addActionListener(e -> {
+            txtPersoEmail.setText("admin@ugb.edu.sn");
+            txtPersoPass.setText("admin123");
+        });
+        barRaccourcis.add(btnDemoAdmin);
+
+        JButton btnConfigDB = UIUtils.creerBoutonSecondaire("⚙️ Config BDD");
+        btnConfigDB.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnConfigDB.addActionListener(e -> ouvrirDialogueConfigBDD());
+        barRaccourcis.add(btnConfigDB);
+
+        footerWrapper.add(barRaccourcis, BorderLayout.NORTH);
+
+        // Barre d'état inférieure Stitch
+        JPanel bottomStatusBar = new JPanel(new BorderLayout());
+        bottomStatusBar.setOpaque(false);
 
         lblStatutBD = new JLabel(getTexteStatutBD());
-        lblStatutBD.setFont(UIUtils.FONT_PETIT);
-        lblStatutBD.setForeground(UIUtils.TEXTE_FONCE);
-        footer.add(lblStatutBD, BorderLayout.WEST);
+        lblStatutBD.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatutBD.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        bottomStatusBar.add(lblStatutBD, BorderLayout.WEST);
 
-        JPanel boutonsFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        boutonsFooter.setOpaque(false);
+        JLabel lblStandards = new JLabel("Archives Ouvertes HAL/CAMES Conformes • Support : dsi@ugb.edu.sn");
+        lblStandards.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStandards.setForeground(UIUtils.TEXTE_GRIS);
+        bottomStatusBar.add(lblStandards, BorderLayout.EAST);
 
-        JButton btnConfigDB = UIUtils.creerBoutonSecondaire("⚙️ Configurer BDD");
-        btnConfigDB.setFont(UIUtils.FONT_PETIT);
-        btnConfigDB.addActionListener(e -> ouvrirDialogueConfigBDD());
-        boutonsFooter.add(btnConfigDB);
+        footerWrapper.add(bottomStatusBar, BorderLayout.SOUTH);
+        backgroundPanel.add(footerWrapper, BorderLayout.SOUTH);
+    }
 
-        JButton btnTester = UIUtils.creerBoutonSecondaire("🔄 Tester MySQL");
-        btnTester.setFont(UIUtils.FONT_PETIT);
-        btnTester.addActionListener(e -> testerConnexionMySQL(true));
-        boutonsFooter.add(btnTester);
+    private JPanel creerCarteEtudiantStitch() {
+        JPanel carte = new JPanel(new BorderLayout(0, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.setColor(UIUtils.BORDURE_DOUCE);
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        carte.setOpaque(false);
+        carte.setBorder(new EmptyBorder(18, 20, 16, 20));
 
-        footer.add(boutonsFooter, BorderLayout.EAST);
-        add(footer, BorderLayout.SOUTH);
+        // Haut : Badge d'accès + Titre
+        JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
+
+        JPanel pillAcces = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 3)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(239, 246, 255));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        pillAcces.setOpaque(false);
+        JLabel lblPill = new JLabel("🎓 Accès Libre Étudiant — Sans Mot de Passe");
+        lblPill.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        lblPill.setForeground(UIUtils.BLEU_UGB);
+        pillAcces.add(lblPill);
+        top.add(pillAcces, BorderLayout.WEST);
+
+        JLabel lblSync = new JLabel("ID: 8-UFR-SYNC");
+        lblSync.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        lblSync.setForeground(UIUtils.TEXTE_GRIS);
+        top.add(lblSync, BorderLayout.EAST);
+
+        carte.add(top, BorderLayout.NORTH);
+
+        // Centre : Description + Formulaire
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+
+        JLabel lblTitre = new JLabel("Consultation Étudiante");
+        lblTitre.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitre.setForeground(UIUtils.TEXTE_FONCE);
+        body.add(lblTitre);
+        body.add(Box.createRigidArea(new Dimension(0, 3)));
+
+        JLabel lblDesc = new JLabel("Accédez immédiatement au catalogue et téléchargez selon vos droits.");
+        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblDesc.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        body.add(lblDesc);
+        body.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        // Grille de saisie
+        JPanel form = new JPanel(new GridLayout(4, 1, 0, 6));
+        form.setOpaque(false);
+
+        // Prénom & Nom (deux champs sur une même ligne)
+        JPanel rowNomPrenom = new JPanel(new GridLayout(1, 2, 8, 0));
+        rowNomPrenom.setOpaque(false);
+
+        JPanel pnlPrenom = new JPanel(new BorderLayout(0, 2));
+        pnlPrenom.setOpaque(false);
+        pnlPrenom.add(new JLabel("Prénom"), BorderLayout.NORTH);
+        txtEtuPrenom = UIUtils.creerChampModerne(12, "Ex: Ibrahima");
+        pnlPrenom.add(txtEtuPrenom, BorderLayout.CENTER);
+
+        JPanel pnlNom = new JPanel(new BorderLayout(0, 2));
+        pnlNom.setOpaque(false);
+        pnlNom.add(new JLabel("Nom"), BorderLayout.NORTH);
+        txtEtuNom = UIUtils.creerChampModerne(12, "Ex: SOW");
+        pnlNom.add(txtEtuNom, BorderLayout.CENTER);
+
+        rowNomPrenom.add(pnlPrenom);
+        rowNomPrenom.add(pnlNom);
+        form.add(rowNomPrenom);
+
+        // Email universitaire
+        JPanel pnlEmail = new JPanel(new BorderLayout(0, 2));
+        pnlEmail.setOpaque(false);
+        pnlEmail.add(new JLabel("Adresse email institutionnelle (@ugb.edu.sn)"), BorderLayout.NORTH);
+        txtEtuEmail = UIUtils.creerChampModerne(20, "ex: ibrahima.sow@ugb.edu.sn");
+        pnlEmail.add(txtEtuEmail, BorderLayout.CENTER);
+        form.add(pnlEmail);
+
+        // Code Étudiant
+        JPanel pnlCode = new JPanel(new BorderLayout(0, 2));
+        pnlCode.setOpaque(false);
+        pnlCode.add(new JLabel("Code Étudiant officiel (ex: P28 0145)"), BorderLayout.NORTH);
+        txtEtuCode = UIUtils.creerChampModerne(20, "Ex: P28 0145");
+        pnlCode.add(txtEtuCode, BorderLayout.CENTER);
+        form.add(pnlCode);
+
+        body.add(form);
+        carte.add(body, BorderLayout.CENTER);
+
+        // Bouton de validation primaire Stitch
+        JPanel actions = new JPanel(new BorderLayout());
+        actions.setOpaque(false);
+        actions.setBorder(new EmptyBorder(8, 0, 0, 0));
+
+        JButton btnConnexion = UIUtils.creerBoutonPrimaire("Accéder au Catalogue Documentaire →");
+        btnConnexion.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnConnexion.setPreferredSize(new Dimension(0, 42));
+        btnConnexion.addActionListener(e -> tenterConnexionEtudiant());
+
+        Runnable onEnter = this::tenterConnexionEtudiant;
+        UIUtils.associerToucheEntree(txtEtuPrenom, onEnter);
+        UIUtils.associerToucheEntree(txtEtuNom, onEnter);
+        UIUtils.associerToucheEntree(txtEtuEmail, onEnter);
+        UIUtils.associerToucheEntree(txtEtuCode, onEnter);
+
+        actions.add(btnConnexion, BorderLayout.CENTER);
+        carte.add(actions, BorderLayout.SOUTH);
+
+        return carte;
+    }
+
+    private JPanel creerCartePersonnelStitch() {
+        JPanel carte = new JPanel(new BorderLayout(0, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.setColor(UIUtils.BORDURE_DOUCE);
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        carte.setOpaque(false);
+        carte.setBorder(new EmptyBorder(18, 20, 16, 20));
+
+        // Haut : Badge Espace Réservé + Statut SSO
+        JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
+
+        JPanel pillAcces = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 3)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(241, 245, 249));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        pillAcces.setOpaque(false);
+        JLabel lblPill = new JLabel("🛡 Espace Réservé Personnel & Enseignants");
+        lblPill.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        lblPill.setForeground(UIUtils.BLEU_SECONDAIRE);
+        pillAcces.add(lblPill);
+        top.add(pillAcces, BorderLayout.WEST);
+
+        JLabel lblSso = new JLabel("SSO-KERBEROS");
+        lblSso.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        lblSso.setForeground(UIUtils.TEXTE_GRIS);
+        top.add(lblSso, BorderLayout.EAST);
+
+        carte.add(top, BorderLayout.NORTH);
+
+        // Centre : Titre + Formulaire
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+
+        JLabel lblTitre = new JLabel("Administration & Gestionnaires");
+        lblTitre.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitre.setForeground(UIUtils.TEXTE_FONCE);
+        body.add(lblTitre);
+        body.add(Box.createRigidArea(new Dimension(0, 3)));
+
+        JLabel lblDesc = new JLabel("Authentification sécurisée pour le dépôt légal, l'indexation et la modération.");
+        lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblDesc.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        body.add(lblDesc);
+        body.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        // Formulaire
+        JPanel form = new JPanel(new GridLayout(3, 1, 0, 10));
+        form.setOpaque(false);
+
+        // Identifiant universitaire
+        JPanel pnlEmail = new JPanel(new BorderLayout(0, 2));
+        pnlEmail.setOpaque(false);
+        pnlEmail.add(new JLabel("Identifiant universitaire (@ugb.edu.sn)"), BorderLayout.NORTH);
+        txtPersoEmail = UIUtils.creerChampModerne(20, "ex: moussa.diakhame@ugb.edu.sn");
+        pnlEmail.add(txtPersoEmail, BorderLayout.CENTER);
+        form.add(pnlEmail);
+
+        // Mot de passe
+        JPanel pnlPass = new JPanel(new BorderLayout(0, 2));
+        pnlPass.setOpaque(false);
+        pnlPass.add(new JLabel("Mot de passe sécurisé"), BorderLayout.NORTH);
+        txtPersoPass = UIUtils.creerChampMotDePasse(20);
+        pnlPass.add(txtPersoPass, BorderLayout.CENTER);
+        form.add(pnlPass);
+
+        body.add(form);
+        carte.add(body, BorderLayout.CENTER);
+
+        // Bouton de validation sombre Stitch
+        JPanel actions = new JPanel(new BorderLayout());
+        actions.setOpaque(false);
+        actions.setBorder(new EmptyBorder(8, 0, 0, 0));
+
+        UIUtils.BoutonModerne btnConnexion = new UIUtils.BoutonModerne(
+                "Connexion à la Console de Gestion 🔒",
+                UIUtils.BLEU_SECONDAIRE,
+                new Color(30, 41, 59),
+                new Color(15, 23, 42),
+                Color.WHITE,
+                Color.WHITE,
+                new Color(15, 23, 42),
+                12
+        );
+        btnConnexion.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnConnexion.setPreferredSize(new Dimension(0, 42));
+        btnConnexion.addActionListener(e -> tenterConnexionPersonnel());
+
+        Runnable onEnter = this::tenterConnexionPersonnel;
+        UIUtils.associerToucheEntree(txtPersoEmail, onEnter);
+        UIUtils.associerToucheEntree(txtPersoPass, onEnter);
+
+        actions.add(btnConnexion, BorderLayout.CENTER);
+        carte.add(actions, BorderLayout.SOUTH);
+
+        return carte;
     }
 
     private String getTexteStatutBD() {
         if (DAOFactory.isUsingJdbc()) {
-            return "🟢 Source active : MySQL JDBC ('" + DBConnection.getDatabase() + "' sur " + DBConnection.getHost() + ":" + DBConnection.getPort() + ")";
+            return "● Infrastructure UGB : Serveur MySQL Connecté ('" + DBConnection.getDatabase() + "')";
         } else {
-            return "🔵 Source active : Mode Mémoire Java Collections (Démonstration autonome)";
+            return "● Infrastructure UGB : Mode Mémoire Vive Actif (Collections Java synchronisées)";
         }
     }
 
@@ -111,12 +526,12 @@ public class LoginFrame extends JFrame {
             if (dispo) {
                 JOptionPane.showMessageDialog(this,
                         "Connexion réussie au serveur MySQL local sur le port " + DBConnection.getPort() + ".\n" +
-                        "L'application est maintenant connectée via JDBC.",
-                        "MySQL Détecté et Opérationnel", JOptionPane.INFORMATION_MESSAGE);
+                                "L'application est synchronisée via JDBC.",
+                        "MySQL Opérationnel", JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(this,
                         "Le serveur MySQL n'a pas répondu sur " + DBConnection.getHost() + ":" + DBConnection.getPort() + ".\n" +
-                        "L'application continue de fonctionner en Mode Mémoire (Collections Java du cours).",
+                                "L'application continue de fonctionner en Mode Mémoire (Collections Java).",
                         "Serveur MySQL Hors-ligne", JOptionPane.WARNING_MESSAGE);
             }
         }
@@ -124,14 +539,14 @@ public class LoginFrame extends JFrame {
 
     private void ouvrirDialogueConfigBDD() {
         JDialog dialog = new JDialog(this, "Configuration de la Base de Données MySQL", true);
-        dialog.setSize(440, 360);
+        dialog.setSize(460, 380);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
         UIUtils.associerToucheEchap(dialog);
 
         JPanel form = new JPanel(new GridBagLayout());
-        form.setBorder(new EmptyBorder(16, 16, 16, 16));
-        form.setBackground(UIUtils.BLANC);
+        form.setBorder(new EmptyBorder(18, 20, 18, 20));
+        form.setBackground(Color.WHITE);
         GridBagConstraints g = new GridBagConstraints();
         g.insets = new Insets(6, 6, 6, 6);
         g.fill = GridBagConstraints.HORIZONTAL;
@@ -147,51 +562,43 @@ public class LoginFrame extends JFrame {
         JPasswordField txtPass = UIUtils.creerChampMotDePasse(15);
         txtPass.setText(DBConnection.getPassword());
 
-        int r = 0;
-        g.gridx = 0; g.gridy = r; form.add(new JLabel("Hôte (Host) :"), g);
-        g.gridx = 1; form.add(txtHost, g);
+        int row = 0;
+        g.gridx = 0; g.gridy = row; g.weightx = 0.35;
+        form.add(UIUtils.creerLabelChamp("Hôte MySQL :"), g);
+        g.gridx = 1; g.weightx = 0.65;
+        form.add(txtHost, g);
 
-        r++;
-        g.gridx = 0; g.gridy = r; form.add(new JLabel("Port :"), g);
-        g.gridx = 1; form.add(txtPort, g);
+        row++;
+        g.gridx = 0; g.gridy = row;
+        form.add(UIUtils.creerLabelChamp("Port :"), g);
+        g.gridx = 1;
+        form.add(txtPort, g);
 
-        r++;
-        g.gridx = 0; g.gridy = r; form.add(new JLabel("Nom de la base :"), g);
-        g.gridx = 1; form.add(txtDatabase, g);
+        row++;
+        g.gridx = 0; g.gridy = row;
+        form.add(UIUtils.creerLabelChamp("Base de données :"), g);
+        g.gridx = 1;
+        form.add(txtDatabase, g);
 
-        r++;
-        g.gridx = 0; g.gridy = r; form.add(new JLabel("Utilisateur :"), g);
-        g.gridx = 1; form.add(txtUser, g);
+        row++;
+        g.gridx = 0; g.gridy = row;
+        form.add(UIUtils.creerLabelChamp("Utilisateur :"), g);
+        g.gridx = 1;
+        form.add(txtUser, g);
 
-        r++;
-        g.gridx = 0; g.gridy = r; form.add(new JLabel("Mot de passe :"), g);
-        g.gridx = 1; form.add(txtPass, g);
+        row++;
+        g.gridx = 0; g.gridy = row;
+        form.add(UIUtils.creerLabelChamp("Mot de passe :"), g);
+        g.gridx = 1;
+        form.add(txtPass, g);
 
         dialog.add(form, BorderLayout.CENTER);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 10));
-        actions.setBackground(UIUtils.FOND_CLAIR);
-
-        JButton btnInitSql = UIUtils.creerBoutonAccent("⚡ Initialiser BDD (centre_doc.sql)");
-        btnInitSql.addActionListener(e -> {
-            try {
-                int p = Integer.parseInt(txtPort.getText().trim());
-                DBConnection.setCredentials(txtHost.getText().trim(), p, txtDatabase.getText().trim(),
-                        txtUser.getText().trim(), new String(txtPass.getPassword()));
-                File sqlFile = new File("centre_doc.sql");
-                if (!sqlFile.exists()) {
-                    sqlFile = new File("../centre_doc.sql");
-                }
-                DBConnection.initialiserBaseDepuisScript(sqlFile);
-                DAOFactory.setUseJdbc(true);
-                lblStatutBD.setText(getTexteStatutBD());
-                JOptionPane.showMessageDialog(dialog, "Base de données 'centre_doc' initialisée et peuplée avec succès !", "Succès", JOptionPane.INFORMATION_MESSAGE);
-                dialog.dispose();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Échec d'initialisation : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-        actions.add(btnInitSql);
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        actions.setBackground(new Color(248, 250, 252));
+        JButton btnFermer = UIUtils.creerBoutonSecondaire("Fermer");
+        btnFermer.addActionListener(e -> dialog.dispose());
+        actions.add(btnFermer);
 
         JButton btnSauvegarder = UIUtils.creerBoutonPrimaire("Appliquer & Tester");
         btnSauvegarder.addActionListener(e -> {
@@ -209,172 +616,6 @@ public class LoginFrame extends JFrame {
 
         dialog.add(actions, BorderLayout.SOUTH);
         dialog.setVisible(true);
-    }
-
-    private JPanel creerOngletEtudiant() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(UIUtils.BLANC);
-        panel.setBorder(new EmptyBorder(20, 24, 20, 24));
-
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        txtEtuPrenom = UIUtils.creerChampTexte(20);
-        txtEtuNom = UIUtils.creerChampTexte(20);
-        txtEtuEmail = UIUtils.creerChampTexte(20);
-        txtEtuCode = UIUtils.creerChampTexte(20);
-
-        // Validation par touche Entrée sur tous les champs
-        Runnable actionEntree = this::tenterConnexionEtudiant;
-        UIUtils.associerToucheEntree(txtEtuPrenom, actionEntree);
-        UIUtils.associerToucheEntree(txtEtuNom, actionEntree);
-        UIUtils.associerToucheEntree(txtEtuEmail, actionEntree);
-        UIUtils.associerToucheEntree(txtEtuCode, actionEntree);
-
-        int row = 0;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
-        form.add(new JLabel("Prénom :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        form.add(txtEtuPrenom, gbc);
-
-        row++;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
-        form.add(new JLabel("Nom :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        form.add(txtEtuNom, gbc);
-
-        row++;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
-        form.add(new JLabel("Email institutionnel :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        form.add(txtEtuEmail, gbc);
-
-        row++;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
-        form.add(new JLabel("Code Étudiant :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        form.add(txtEtuCode, gbc);
-
-        panel.add(form, BorderLayout.CENTER);
-
-        // Bouton de connexion et raccourcis démo
-        JPanel actions = new JPanel(new GridLayout(2, 1, 10, 10));
-        actions.setOpaque(false);
-
-        JButton btnConnexion = UIUtils.creerBoutonPrimaire("Accéder au catalogue des thèses et mémoires");
-        btnConnexion.addActionListener(e -> tenterConnexionEtudiant());
-        actions.add(btnConnexion);
-
-        JPanel raccourcis = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-        raccourcis.setOpaque(false);
-        JLabel lblDemoEtu = new JLabel("Raccourcis Démo : ");
-        lblDemoEtu.setFont(UIUtils.FONT_PETIT);
-        lblDemoEtu.setForeground(UIUtils.TEXTE_SECONDAIRE);
-        raccourcis.add(lblDemoEtu);
-
-        JButton btnDemo1 = UIUtils.creerBoutonSecondaire("Ibrahima SOW (SAT)");
-        btnDemo1.setFont(UIUtils.FONT_PETIT);
-        btnDemo1.addActionListener(e -> {
-            txtEtuPrenom.setText("Ibrahima");
-            txtEtuNom.setText("SOW");
-            txtEtuEmail.setText("ibrahima.sow@ugb.edu.sn");
-            txtEtuCode.setText("P28 0145");
-        });
-        raccourcis.add(btnDemo1);
-
-        JButton btnDemo2 = UIUtils.creerBoutonSecondaire("Fatou NDIAYE (SEG)");
-        btnDemo2.setFont(UIUtils.FONT_PETIT);
-        btnDemo2.addActionListener(e -> {
-            txtEtuPrenom.setText("Fatou");
-            txtEtuNom.setText("NDIAYE");
-            txtEtuEmail.setText("fatou.ndiaye@ugb.edu.sn");
-            txtEtuCode.setText("P29 0089");
-        });
-        raccourcis.add(btnDemo2);
-
-        actions.add(raccourcis);
-        panel.add(actions, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
-    private JPanel creerOngletPersonnel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(UIUtils.BLANC);
-        panel.setBorder(new EmptyBorder(20, 24, 20, 24));
-
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        txtPersoEmail = UIUtils.creerChampTexte(20);
-        txtPersoPass = UIUtils.creerChampMotDePasse(20);
-
-        Runnable actionEntree = this::tenterConnexionPersonnel;
-        UIUtils.associerToucheEntree(txtPersoEmail, actionEntree);
-        UIUtils.associerToucheEntree(txtPersoPass, actionEntree);
-
-        int row = 0;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
-        form.add(new JLabel("Email (@ugb.edu.sn) :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        form.add(txtPersoEmail, gbc);
-
-        row++;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3;
-        form.add(new JLabel("Mot de passe :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        form.add(txtPersoPass, gbc);
-
-        panel.add(form, BorderLayout.CENTER);
-
-        JPanel actions = new JPanel(new GridLayout(2, 1, 10, 10));
-        actions.setOpaque(false);
-
-        JButton btnConnexion = UIUtils.creerBoutonPrimaire("Se connecter à l'espace de gestion");
-        btnConnexion.addActionListener(e -> tenterConnexionPersonnel());
-        actions.add(btnConnexion);
-
-        JPanel raccourcis = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-        raccourcis.setOpaque(false);
-        JLabel lblDemoPerso = new JLabel("Raccourcis Démo : ");
-        lblDemoPerso.setFont(UIUtils.FONT_PETIT);
-        lblDemoPerso.setForeground(UIUtils.TEXTE_SECONDAIRE);
-        raccourcis.add(lblDemoPerso);
-
-        JButton btnAdmin = UIUtils.creerBoutonSecondaire("Admin");
-        btnAdmin.setFont(UIUtils.FONT_PETIT);
-        btnAdmin.addActionListener(e -> {
-            txtPersoEmail.setText("admin@ugb.edu.sn");
-            txtPersoPass.setText("admin123");
-        });
-        raccourcis.add(btnAdmin);
-
-        JButton btnGestSAT = UIUtils.creerBoutonSecondaire("Gest. SAT");
-        btnGestSAT.setFont(UIUtils.FONT_PETIT);
-        btnGestSAT.addActionListener(e -> {
-            txtPersoEmail.setText("moussa.diakhame@ugb.edu.sn");
-            txtPersoPass.setText("pass123");
-        });
-        raccourcis.add(btnGestSAT);
-
-        JButton btnGestSEG = UIUtils.creerBoutonSecondaire("Gest. SEG");
-        btnGestSEG.setFont(UIUtils.FONT_PETIT);
-        btnGestSEG.addActionListener(e -> {
-            txtPersoEmail.setText("aminata.diallo@ugb.edu.sn");
-            txtPersoPass.setText("pass123");
-        });
-        raccourcis.add(btnGestSEG);
-
-        actions.add(raccourcis);
-        panel.add(actions, BorderLayout.SOUTH);
-
-        return panel;
     }
 
     private void tenterConnexionEtudiant() {
