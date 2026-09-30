@@ -1,6 +1,7 @@
 package sn.ugb.centredoc.service;
 
 import sn.ugb.centredoc.dao.DAOFactory;
+import sn.ugb.centredoc.dao.DemandeAccesDAO;
 import sn.ugb.centredoc.dao.DocumentDAO;
 import sn.ugb.centredoc.dao.TelechargementDAO;
 import sn.ugb.centredoc.dao.UfrDAO;
@@ -24,11 +25,13 @@ public class DocumentService {
     private final DocumentDAO documentDAO;
     private final TelechargementDAO telechargementDAO;
     private final UfrDAO ufrDAO;
+    private final DemandeAccesDAO demandeAccesDAO;
 
     public DocumentService() {
         this.documentDAO = DAOFactory.getDocumentDAO();
         this.telechargementDAO = DAOFactory.getTelechargementDAO();
         this.ufrDAO = DAOFactory.getUfrDAO();
+        this.demandeAccesDAO = DAOFactory.getDemandeAccesDAO();
     }
 
     /**
@@ -94,6 +97,8 @@ public class DocumentService {
 
         try {
             documentDAO.ajouter(doc);
+            // Bonus 3.3 : notification visuelle pour les étudiants de l'UFR concernée
+            NotificationService.getInstance().notifierPublication(doc.getIdUfr(), doc);
         } catch (Exception e) {
             throw new CentreDocException("Erreur lors de l'enregistrement du document : " + e.getMessage(), e);
         }
@@ -232,7 +237,22 @@ public class DocumentService {
 
             if (demandeur != null && demandeur.getRole() == Role.ETUDIANT) {
                 if (doc.getNiveauAcces() == NiveauAcces.RESTREINT) {
-                    throw new AccesRefuseException("Accès refusé : Ce document est sous embargo (accès restreint). Sa consultation n'est pas autorisée.");
+                    // Bonus 3.3 : la consultation est tolérée uniquement si une demande d'accès
+                    // a été formellement ACCEPTEE par le gestionnaire de l'UFR du document
+                    boolean accesAccorde = false;
+                    try {
+                        for (DemandeAcces da : demandeAccesDAO.listerParEtudiant(demandeur.getIdUtilisateur())) {
+                            if (da.getIdDocument() == doc.getIdDocument() && da.getStatut() == StatutDemande.ACCEPTEE) {
+                                accesAccorde = true;
+                                break;
+                            }
+                        }
+                    } catch (Exception ignored) {
+                        accesAccorde = false;
+                    }
+                    if (!accesAccorde) {
+                        throw new AccesRefuseException("Accès refusé : Ce document est sous embargo (accès restreint). Sa consultation n'est pas autorisée. Vous pouvez soumettre une demande d'accès depuis l'onglet 'Demandes d'Accès'.");
+                    }
                 }
             }
 
@@ -274,7 +294,7 @@ public class DocumentService {
                 throw new AccesRefuseException("Téléchargement non autorisé : Ce document est configuré en 'Consultation seule'. Seules les métadonnées et le résumé sont accessibles.");
             }
             if (doc.getNiveauAcces() == NiveauAcces.RESTREINT) {
-                throw new AccesRefuseException("Téléchargement interdit : Ce document est sous embargo (accès restreint).");
+                throw new AccesRefuseException("Téléchargement interdit : Ce document est sous embargo (accès restreint). Même avec une demande d'accès acceptée, seul le résumé reste consultable.");
             }
         }
 

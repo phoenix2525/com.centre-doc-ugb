@@ -3,8 +3,12 @@ package sn.ugb.centredoc.ui;
 import sn.ugb.centredoc.dao.DAOFactory;
 import sn.ugb.centredoc.exception.AccesRefuseException;
 import sn.ugb.centredoc.exception.DocumentIntrouvableException;
+import sn.ugb.centredoc.exception.DoublonException;
+import sn.ugb.centredoc.exception.ChampInvalideException;
 import sn.ugb.centredoc.model.*;
+import sn.ugb.centredoc.service.DemandeAccesService;
 import sn.ugb.centredoc.service.DocumentService;
+import sn.ugb.centredoc.service.NotificationService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -22,11 +26,13 @@ import java.util.List;
  * 2. CONSULTATION_SEULE expose uniquement les métadonnées et le résumé (téléchargement bloqué).
  * 3. RESTREINT (embargo) strictement invisible et inaccessible pour l'étudiant.
  * 4. Historique personnel des téléchargements.
- * Ergonomie : Interface Master-Detail (Split-Pane) moderne avec prévisualisation et recherche en direct.
+ * Interface de type maître-détail : liste des résultats à gauche, fiche détaillée à droite,
+ * avec recherche actualisée à chaque frappe.
  */
 public class EtudiantDashboard extends JFrame {
     private final Etudiant etudiant;
     private final DocumentService documentService = new DocumentService();
+    private final DemandeAccesService demandeAccesService = new DemandeAccesService();
 
     // Critères de recherche multicritère
     private JTextField txtTitre;
@@ -60,6 +66,16 @@ public class EtudiantDashboard extends JFrame {
     private JTable tableHistorique;
     private DefaultTableModel modelHistorique;
 
+    // Formulaire & registre des demandes d'accès aux documents sous embargo (Bonus 3.3)
+    private JTextField txtDemandeTitre;
+    private JTextArea txtDemandeMotif;
+    private JTable tableDemandes;
+    private DefaultTableModel modelDemandes;
+
+    // Panneau de notifications visuelles (Bonus 3.3 : nouveautés de l'UFR de l'étudiant)
+    private JPanel panelNouveautes;
+    private JLabel lblNouveautes;
+
     private List<Ufr> listeUfrs;
 
     public EtudiantDashboard(Etudiant etudiant) {
@@ -69,6 +85,7 @@ public class EtudiantDashboard extends JFrame {
         chargerUfrs();
         lancerRecherche();
         chargerHistorique();
+        chargerDemandes();
     }
 
     private void initUI() {
@@ -86,9 +103,9 @@ public class EtudiantDashboard extends JFrame {
             this.dispose();
         });
 
-        // TopBar Stitch
+        // Barre d'en-tête
         String infoEtu = etudiant.getNomComplet() + " (" + etudiant.getCodeEtudiant() + ")";
-        JPanel topBar = UIUtils.creerTopBarStitch(
+        JPanel topBar = UIUtils.creerBarreEnTete(
                 "Système d'Information Doc UGB",
                 "CATALOGUE DES THÈSES & MÉMOIRES",
                 "Catalogue Étudiant",
@@ -103,6 +120,7 @@ public class EtudiantDashboard extends JFrame {
         tabbedPane.setFont(UIUtils.FONT_SOUS_TITRE);
 
         tabbedPane.addTab("Recherche & Consultation", creerOngletRecherche());
+        tabbedPane.addTab("Demandes d'Accès (Embargo)", creerOngletDemandes());
         tabbedPane.addTab("Historique des telechargements", creerOngletHistorique());
 
         add(tabbedPane, BorderLayout.CENTER);
@@ -129,7 +147,7 @@ public class EtudiantDashboard extends JFrame {
         comboUfr.setFont(UIUtils.FONT_NORMAL);
         txtDiscipline = UIUtils.creerChampTexte(13);
 
-        // Recherche en direct à la frappe (Accessibilité & Ergonomie moderne)
+        // Recherche en direct à la frappe
         DocumentListener liveSearch = new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { lancerRecherche(); }
             @Override public void removeUpdate(DocumentEvent e) { lancerRecherche(); }
@@ -171,6 +189,27 @@ public class EtudiantDashboard extends JFrame {
         searchBox.add(btnSearchPanel, g);
 
         panel.add(searchBox, BorderLayout.NORTH);
+
+        // Panneau de notifications visuelles (Bonus 3.3) : nouveautés publiées dans l'UFR de l'étudiant
+        panelNouveautes = new JPanel(new BorderLayout());
+        panelNouveautes.setBackground(new Color(236, 253, 245));
+        panelNouveautes.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 4, 0, 0, new Color(5, 150, 105)),
+                new EmptyBorder(10, 12, 10, 12)
+        ));
+        lblNouveautes = new JLabel("");
+        lblNouveautes.setFont(UIUtils.FONT_NORMAL);
+        lblNouveautes.setForeground(UIUtils.TEXTE_FONCE);
+        lblNouveautes.setVerticalAlignment(SwingConstants.TOP);
+        panelNouveautes.add(lblNouveautes, BorderLayout.CENTER);
+        panelNouveautes.setVisible(false);
+
+        JPanel northStack = new JPanel();
+        northStack.setLayout(new BoxLayout(northStack, BoxLayout.Y_AXIS));
+        northStack.setOpaque(false);
+        northStack.add(panelNouveautes);
+        northStack.add(searchBox);
+        panel.add(northStack, BorderLayout.NORTH);
 
         // Tableau des résultats (Côté gauche du SplitPane)
         String[] colonnes = {"ID", "Type", "Titre du document", "Auteur", "Encadrant", "Année", "UFR", "Discipline", "Accès"};
@@ -365,7 +404,7 @@ public class EtudiantDashboard extends JFrame {
             txtApercuResume.setCaretPosition(0);
             lblApercuMotsCles.setText("Mots-clés : " + documentSelectionne.getMotsCles());
 
-            // Règle d'or 1 & 2 : Bouton actif UNIQUEMENT si TELECHARGEABLE
+            // Règles 1 et 2 : bouton actif UNIQUEMENT si TELECHARGEABLE
             if (documentSelectionne.isTelechargeable()) {
                 btnApercuTelecharger.setEnabled(true);
                 btnApercuTelecharger.setText("⬇️ Télécharger le document PDF (" + documentSelectionne.getType() + ")");
@@ -430,6 +469,7 @@ public class EtudiantDashboard extends JFrame {
     }
 
     private void lancerRecherche() {
+        actualiserNotifications();
         modelResultats.setRowCount(0);
         String titre = (txtTitre != null) ? txtTitre.getText() : "";
         String auteur = (txtAuteur != null) ? txtAuteur.getText() : "";
@@ -486,6 +526,236 @@ public class EtudiantDashboard extends JFrame {
             }
         } catch (Exception e) {
             System.err.println("Erreur historique étudiant : " + e.getMessage());
+        }
+    }
+
+    /**
+     * Actualise le panneau de notifications visuelles (Bonus 3.3) :
+     * nouveaux documents publiés dans l'UFR de l'étudiant au cours des 7 derniers jours.
+     */
+    private void actualiserNotifications() {
+        if (panelNouveautes == null || lblNouveautes == null) {
+            return;
+        }
+        Integer idUfrEtu = etudiant.getIdUfr();
+        if (idUfrEtu == null || idUfrEtu <= 0) {
+            panelNouveautes.setVisible(false);
+            return;
+        }
+        try {
+            List<Document> nouveautes = NotificationService.getInstance().listerNouveautes(idUfrEtu);
+            if (nouveautes.isEmpty()) {
+                panelNouveautes.setVisible(false);
+                return;
+            }
+            StringBuilder sb = new StringBuilder("<html><b>🔔 " + nouveautes.size()
+                    + " nouveau(x) document(s) publié(s) dans votre UFR (" + etudiant.getNomUfr() + ") :</b><br>");
+            int affiches = 0;
+            for (Document d : nouveautes) {
+                if (affiches >= 3) {
+                    sb.append("&nbsp;&nbsp;… et ").append(nouveautes.size() - affiches).append(" autre(s) dans le catalogue.<br>");
+                    break;
+                }
+                sb.append("&nbsp;&nbsp;• ").append(d.getTitre())
+                        .append(" (").append(d.getType()).append(", ").append(d.getAnnee()).append(")<br>");
+                affiches++;
+            }
+            sb.append("<span style='color:#0f6832;'>Consultez le catalogue ci-dessous pour les explorer et les télécharger.</span></html>");
+            lblNouveautes.setText(sb.toString());
+            panelNouveautes.setVisible(true);
+        } catch (Exception e) {
+            panelNouveautes.setVisible(false);
+            System.err.println("Erreur notifications étudiant : " + e.getMessage());
+        }
+    }
+
+    /**
+     * Onglet Demandes d'Accès (Bonus 3.3) : formulaire de demande pour un document
+     * sous embargo + registre personnel des demandes soumises et de leur statut.
+     */
+    private JPanel creerOngletDemandes() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        panel.setBackground(UIUtils.FOND_CLAIR);
+
+        // Partie haute : Formulaire de demande d'accès
+        JPanel formBox = new JPanel(new BorderLayout(0, 8));
+        formBox.setBackground(UIUtils.BLANC);
+        formBox.setBorder(UIUtils.creerBordureCarte("Formulaire de Demande d'Accès — Document sous Embargo (RESTREINT)"));
+
+        JPanel formInner = new JPanel(new BorderLayout(10, 10));
+        formInner.setOpaque(false);
+        formInner.setBorder(new EmptyBorder(4, 12, 10, 12));
+
+        JLabel lblInfo = new JLabel("<html>Les documents sous embargo sont invisibles dans le catalogue (Règle métier 3).<br>"
+                + "Saisissez la référence exacte (titre) du document ainsi que le motif de votre demande :<br>"
+                + "le gestionnaire du centre concerné validera ou refusera votre requête.</html>");
+        lblInfo.setFont(UIUtils.FONT_PETIT);
+        lblInfo.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        formInner.add(lblInfo, BorderLayout.NORTH);
+
+        JPanel champs = new JPanel(new GridBagLayout());
+        champs.setOpaque(false);
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(4, 4, 4, 8);
+        g.fill = GridBagConstraints.HORIZONTAL;
+
+        txtDemandeTitre = UIUtils.creerChampTexte(26);
+        txtDemandeMotif = new JTextArea(3, 26);
+        txtDemandeMotif.setFont(UIUtils.FONT_NORMAL);
+        txtDemandeMotif.setLineWrap(true);
+        txtDemandeMotif.setWrapStyleWord(true);
+        txtDemandeMotif.setBackground(new Color(248, 250, 252));
+        txtDemandeMotif.setBorder(new EmptyBorder(6, 8, 6, 8));
+
+        g.gridx = 0; g.gridy = 0; g.weightx = 0.25; champs.add(new JLabel("Référence (titre) :"), g);
+        g.gridx = 1; g.weightx = 0.75; champs.add(txtDemandeTitre, g);
+        g.gridx = 0; g.gridy = 1; g.weightx = 0.25; champs.add(new JLabel("Motif de la demande :"), g);
+        g.gridx = 1; g.weightx = 0.75; champs.add(new JScrollPane(txtDemandeMotif), g);
+
+        formInner.add(champs, BorderLayout.CENTER);
+
+        JPanel formActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        formActions.setOpaque(false);
+        JButton btnSoumettre = UIUtils.creerBoutonAccent("📤 Soumettre la demande d'accès");
+        btnSoumettre.addActionListener(e -> soumettreDemande());
+        formActions.add(btnSoumettre);
+        formInner.add(formActions, BorderLayout.SOUTH);
+
+        formBox.add(formInner, BorderLayout.CENTER);
+        panel.add(formBox, BorderLayout.NORTH);
+
+        // Partie centrale : Registre des demandes soumises
+        String[] cols = {"ID", "Date de la demande", "Document demandé", "UFR", "Statut", "Motif"};
+        modelDemandes = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tableDemandes = new JTable(modelDemandes);
+        UIUtils.configurerTableModerne(tableDemandes);
+
+        JScrollPane scroll = new JScrollPane(tableDemandes);
+        scroll.setBorder(UIUtils.creerBordureCarte("Mes demandes d'accès et leur statut de traitement"));
+        panel.add(scroll, BorderLayout.CENTER);
+
+        // Partie basse : Actions
+        JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        south.setOpaque(false);
+
+        JButton btnConsulter = UIUtils.creerBoutonPrimaire("📖 Consulter la fiche autorisée");
+        btnConsulter.setEnabled(false);
+        btnConsulter.addActionListener(e -> consulterFicheAccordee());
+        tableDemandes.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = tableDemandes.getSelectedRow();
+                if (row == -1) {
+                    btnConsulter.setEnabled(false);
+                } else {
+                    int modelRow = tableDemandes.convertRowIndexToModel(row);
+                    Object statut = modelDemandes.getValueAt(modelRow, 4);
+                    btnConsulter.setEnabled(StatutDemande.ACCEPTEE.getLibelle().equals(statut));
+                }
+            }
+        });
+        south.add(btnConsulter);
+
+        JButton btnRefresh = UIUtils.creerBoutonSecondaire("🔄 Actualiser mes demandes");
+        btnRefresh.addActionListener(e -> chargerDemandes());
+        south.add(btnRefresh);
+        panel.add(south, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    /**
+     * Soumission du formulaire de demande d'accès (avec rattrapage des exceptions métier).
+     */
+    private void soumettreDemande() {
+        String titre = txtDemandeTitre.getText();
+        String motif = txtDemandeMotif.getText();
+        try {
+            demandeAccesService.creerDemande(etudiant, titre, motif);
+            JOptionPane.showMessageDialog(this,
+                    "Demande d'accès soumise avec succès !\nElle est maintenant en attente de validation par le gestionnaire du centre.",
+                    "Demande Enregistrée", JOptionPane.INFORMATION_MESSAGE);
+            txtDemandeTitre.setText("");
+            txtDemandeMotif.setText("");
+            chargerDemandes();
+        } catch (ChampInvalideException | DoublonException | DocumentIntrouvableException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Règle Métier Non Respectée", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erreur : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Consultation de la fiche d'un document sous embargo dont la demande a été ACCEPTEE.
+     * Règles 1 et 3 : le téléchargement du PDF reste formellement bloqué.
+     */
+    private void consulterFicheAccordee() {
+        int row = tableDemandes.getSelectedRow();
+        if (row == -1) {
+            return;
+        }
+        int modelRow = tableDemandes.convertRowIndexToModel(row);
+        int idDemande = (int) modelDemandes.getValueAt(modelRow, 0);
+
+        try {
+            DemandeAcces cible = null;
+            for (DemandeAcces da : demandeAccesService.listerPourEtudiant(etudiant)) {
+                if (da.getIdDemande() == idDemande) {
+                    cible = da;
+                    break;
+                }
+            }
+            if (cible == null || !cible.isAcceptee()) {
+                JOptionPane.showMessageDialog(this,
+                        "L'accès n'a pas encore été accordé pour cette demande.",
+                        "Accès Non Accordé", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Document doc = documentService.consulterFicheDetaillee(cible.getIdDocument(), etudiant);
+            String fiche = "<html><body style='width:440px;'>"
+                    + "<h2 style='color:#1D4ED8;'>" + doc.getTitre() + "</h2>"
+                    + "<p><b>Auteur :</b> " + doc.getAuteur() + "<br>"
+                    + "<b>Encadrant :</b> " + doc.getEncadrant() + "<br>"
+                    + "<b>Année / Discipline :</b> " + doc.getAnnee() + " | " + doc.getDiscipline() + "<br>"
+                    + "<b>UFR :</b> " + doc.getNomUfr() + "<br>"
+                    + "<b>Niveau :</b> " + doc.getNiveauAcces().getLibelle() + "</p>"
+                    + "<p><b>Résumé :</b><br>" + doc.getResume() + "</p>"
+                    + "<p style='color:#b05000;'><b>⚠️ Accès accordé en consultation uniquement : "
+                    + "le téléchargement du PDF reste bloqué (document sous embargo).</b></p>"
+                    + "</body></html>";
+            JOptionPane.showMessageDialog(this, fiche, "Fiche du document (Accès accordé)", JOptionPane.INFORMATION_MESSAGE);
+        } catch (AccesRefuseException ex) {
+            JOptionPane.showMessageDialog(this, "❌ " + ex.getMessage(), "Règle Métier : Accès Refusé", JOptionPane.WARNING_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erreur : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Charge le registre personnel des demandes d'accès de l'étudiant.
+     */
+    private void chargerDemandes() {
+        if (modelDemandes == null) {
+            return;
+        }
+        modelDemandes.setRowCount(0);
+        try {
+            List<DemandeAcces> liste = demandeAccesService.listerPourEtudiant(etudiant);
+            for (DemandeAcces da : liste) {
+                modelDemandes.addRow(new Object[]{
+                        da.getIdDemande(),
+                        da.getDateDemande(),
+                        da.getTitreDocument(),
+                        da.getUfrDocument(),
+                        da.getStatut().getLibelle(),
+                        da.getMotif()
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur chargement demandes : " + e.getMessage());
         }
     }
 

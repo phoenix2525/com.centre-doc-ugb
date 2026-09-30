@@ -26,6 +26,14 @@ Elle implemente fidelement les trois acteurs du systeme :
 Des modules avances de statistiques graphiques (camemberts et histogrammes) 
 et d'exportation au format CSV completent l'application.
 
+Deux modules bonus completent le systeme :
+- FORMULAIRE DE DEMANDE D'ACCES : l'etudiant peut soumettre une demande de 
+  consultation pour un document sous embargo (RESTREINT) ; le gestionnaire du 
+  centre l'accepte ou la refuse. L'acceptation autorise la consultation de la 
+  fiche, le telechargement du PDF reste bloque.
+- NOTIFICATIONS VISUELLES : l'etudiant est notifie des nouveaux documents 
+  publies dans son UFR (panneau de nouveautes de la semaine).
+
 
 2. ARCHITECTURE TECHNIQUE ET REGLES ACADEMIQUES
 -----------------------------------------------
@@ -51,10 +59,11 @@ et d'exportation au format CSV completent l'application.
 - docs/                    : Echantillons de fichiers PDF pour les tests de telechargement
 - bin/                     : Dossier des fichiers .class compiles
 - centre_doc.sql           : Script DDL/DML de creation et de population de la BDD
+                             (tables ufr, utilisateurs, documents, telechargements, demande_acces)
 - centre_doc.jar           : Archive executable generee
 - compile.bat              : Script Windows de compilation complete
 - run.bat                  : Script Windows de lancement direct de l'application
-- run_tests.bat            : Script Windows de validation des 10 regles metier
+- run_tests.bat            : Script Windows de validation des 22 regles metier et bonus
 - sources.txt              : Liste des classes sources Java
 - DIRECTIVES_ET_CONTINUATION.md : Dossier complet de transmission technique et academique
 - README.txt               : Le present document
@@ -91,7 +100,7 @@ B. Execution de la validation des regles metier :
    Double-cliquez sur 'run_tests.bat'
    OU tapez en invite de commande :
    run_tests.bat
-   (Confirme 10 / 10 tests unitaires avec succes)
+   (Confirme 22 / 22 tests de validation des regles metier et bonus avec succes)
 
 C. Lancement de l'application graphique :
    Double-cliquez sur 'run.bat'

@@ -4,7 +4,9 @@ import sn.ugb.centredoc.dao.DAOFactory;
 import sn.ugb.centredoc.exception.*;
 import sn.ugb.centredoc.model.*;
 import sn.ugb.centredoc.service.AuthService;
+import sn.ugb.centredoc.service.DemandeAccesService;
 import sn.ugb.centredoc.service.DocumentService;
+import sn.ugb.centredoc.service.NotificationService;
 import sn.ugb.centredoc.service.UtilisateurService;
 
 import java.io.File;
@@ -37,6 +39,7 @@ public class TestReglesMetier {
         AuthService authService = new AuthService();
         DocumentService docService = new DocumentService();
         UtilisateurService userService = new UtilisateurService();
+        DemandeAccesService demandeService = new DemandeAccesService();
 
         // -------------------------------------------------------------
         // TEST 1 : Format de l'adresse email (@ugb.edu.sn)
@@ -154,7 +157,7 @@ public class TestReglesMetier {
         // TEST 6 : Unicité des identifiants (DoublonException)
         // -------------------------------------------------------------
         System.out.println("\n6. Test unicité des identifiants (DoublonException) :");
-        Administrateur admin = new Administrateur(1, "DIOP", "Amadou", "admin@ugb.edu.sn", "admin123");
+        Administrateur admin = new Administrateur(1, "NDIAYE", "Ibrahima", "admin@ugb.edu.sn", "admin123");
         try {
             userService.creerGestionnaire("Test", "Nom", "moussa.diakhame@ugb.edu.sn", "pass", 1, admin);
             affirmer(false, "Création avec email existant aurait dû lever une DoublonException.");
@@ -162,6 +165,154 @@ public class TestReglesMetier {
             affirmer(true, "Création avec email dupliqué refusée avec DoublonException : " + e.getMessage());
         } catch (Exception e) {
             affirmer(false, "Mauvaise exception levée : " + e.getClass().getName());
+        }
+
+        // -------------------------------------------------------------
+        // TEST 7 : Enrôlement d'étudiants par un gestionnaire
+        // -------------------------------------------------------------
+        System.out.println("\n7. Test enrôlement d'étudiant par un gestionnaire :");
+        try {
+            Etudiant nouvEtu = userService.creerEtudiant(
+                    "DIAGNE", "Aissatou", "aissatou.diagne@ugb.edu.sn", "P30 0011", 1, gestSAT
+            );
+            affirmer(nouvEtu != null && "P30 0011".equals(nouvEtu.getCodeEtudiant()),
+                    "Gestionnaire SAT a enrôlé avec succès l'étudiante Aïssatou DIAGNE dans son UFR (SAT).");
+
+            Etudiant etuConnecteNouv = authService.authentifierEtudiant("Aissatou", "DIAGNE", "aissatou.diagne@ugb.edu.sn", "P30 0011");
+            affirmer(etuConnecteNouv != null,
+                    "Étudiante nouvellement enrôlée s'authentifie avec succès sans mot de passe.");
+        } catch (Exception e) {
+            affirmer(false, "Échec enrôlement étudiant par gestionnaire : " + e.getMessage());
+        }
+
+        try {
+            Etudiant etuAutreUfr = userService.creerEtudiant(
+                    "KANE", "Oumar", "oumar.kane@ugb.edu.sn", "P30 0022", 3, gestSAT
+            );
+            affirmer(etuAutreUfr != null && etuAutreUfr.getIdUfr() == 3,
+                    "Gestionnaire SAT peut enrôler un étudiant pour une autre UFR (UFR SEG - 3) après avertissement/confirmation.");
+        } catch (Exception e) {
+            affirmer(false, "Échec enrôlement autre UFR : " + e.getMessage());
+        }
+
+        try {
+            Etudiant imposteur = new Etudiant(99, "HACKER", "Test", "hacker@ugb.edu.sn", "P99 9999", 1);
+            userService.creerEtudiant("FAIL", "User", "fail.user@ugb.edu.sn", "P30 9999", 1, imposteur);
+            affirmer(false, "Un étudiant ne doit pas pouvoir enrôler un autre étudiant.");
+        } catch (AccesRefuseException e) {
+            affirmer(true, "Tentative d'enrôlement par un non-gestionnaire/non-admin bloquée avec AccesRefuseException.");
+        } catch (Exception e) {
+            affirmer(false, "Mauvaise exception : " + e.getClass().getName());
+        }
+
+        // -------------------------------------------------------------
+        // TEST 8 : Demande d'accès aux documents sous embargo (Bonus 3.3)
+        // -------------------------------------------------------------
+        System.out.println("\n8. Test demande d'accès aux documents sous embargo (Bonus) :");
+        DemandeAcces demandeCreee = null;
+        try {
+            demandeCreee = demandeService.creerDemande(etuConnecte,
+                    "Vulnérabilités cryptographiques des protocoles de communication de l'Internet des Objets (IoT)",
+                    "Travaux de recherche encadrés nécessitant la consultation du mémoire sous embargo.");
+            affirmer(demandeCreee != null && demandeCreee.isEnAttente(),
+                    "Demande d'accès soumise avec succès pour le document sous embargo (statut EN_ATTENTE).");
+        } catch (Exception e) {
+            affirmer(false, "Échec de la soumission de la demande d'accès : " + e.getMessage());
+        }
+
+        try {
+            demandeService.creerDemande(etuConnecte,
+                    "Vulnérabilités cryptographiques des protocoles de communication de l'Internet des Objets (IoT)",
+                    "Seconde demande de test.");
+            affirmer(false, "Une seconde demande pour le même document aurait dû lever une DoublonException.");
+        } catch (DoublonException e) {
+            affirmer(true, "Doublon de demande refusé avec DoublonException : " + e.getMessage());
+        } catch (Exception e) {
+            affirmer(false, "Mauvaise exception levée : " + e.getClass().getName());
+        }
+
+        // La consultation reste refusée tant que la demande n'est pas acceptée (Règle 3)
+        try {
+            docService.consulterFicheDetaillee(5, etuConnecte);
+            affirmer(false, "La consultation aurait dû rester bloquée avant acceptation de la demande.");
+        } catch (AccesRefuseException e) {
+            affirmer(true, "Consultation du document sous embargo toujours refusée avant acceptation de la demande.");
+        } catch (Exception e) {
+            affirmer(false, "Mauvaise exception levée : " + e.getClass().getName());
+        }
+
+        // Acceptation par le gestionnaire SAT (Règle 4 : le document 5 appartient à l'UFR SAT)
+        try {
+            demandeService.traiterDemande(demandeCreee.getIdDemande(), true, gestSAT);
+            affirmer(true, "Gestionnaire SAT a accepté la demande d'accès (document de son UFR).");
+        } catch (Exception e) {
+            affirmer(false, "Échec de l'acceptation de la demande : " + e.getMessage());
+        }
+
+        // La consultation est désormais autorisée (Bonus 3.3)
+        try {
+            Document docConsulte = docService.consulterFicheDetaillee(5, etuConnecte);
+            affirmer(docConsulte != null && docConsulte.isRestreint(),
+                    "Consultation du document sous embargo autorisée après acceptation de la demande.");
+        } catch (Exception e) {
+            affirmer(false, "Échec de la consultation après acceptation : " + e.getMessage());
+        }
+
+        // Le téléchargement reste formellement bloqué (Règle 1 préservée)
+        try {
+            docService.telechargerDocument(5, etuConnecte, tempDir);
+            affirmer(false, "Le téléchargement d'un document RESTREINT aurait dû rester bloqué même après acceptation.");
+        } catch (AccesRefuseException e) {
+            affirmer(true, "Téléchargement du document sous embargo toujours bloqué après acceptation (Règle 1 préservée) : " + e.getMessage());
+        } catch (Exception e) {
+            affirmer(false, "Mauvaise exception levée : " + e.getClass().getName());
+        }
+
+        // Une demande sur un document non restreint est refusée (inutile : document déjà accessible)
+        try {
+            demandeService.creerDemande(etuConnecte,
+                    "Optimisation des requêtes distribuées dans les bases de données réparties", "Test.");
+            affirmer(false, "Une demande sur un document non restreint aurait dû être refusée.");
+        } catch (ChampInvalideException e) {
+            affirmer(true, "Demande sur un document non sous embargo correctement refusée avec ChampInvalideException : " + e.getMessage());
+        } catch (Exception e) {
+            affirmer(false, "Mauvaise exception levée : " + e.getClass().getName());
+        }
+
+        // Nettoyage : suppression de la demande créée (garantit la ré-exécution de la suite en mode JDBC)
+        try {
+            if (demandeCreee != null) {
+                DAOFactory.getDemandeAccesDAO().supprimer(demandeCreee.getIdDemande());
+            }
+        } catch (Exception ignored) {
+        }
+
+        // -------------------------------------------------------------
+        // TEST 9 : Notifications des nouvelles publications (Bonus 3.3)
+        // -------------------------------------------------------------
+        System.out.println("\n9. Test notifications des nouvelles publications (Bonus) :");
+        try {
+            Document nouveauDoc = new Document(
+                    "Mémoire de test notification automatique", "Auteur Test", "Encadrant Test", 2026,
+                    TypeDocument.MEMOIRE, 1, "Informatique", "Résumé de test pour la notification.",
+                    "test, notification", "test_notification.pdf", NiveauAcces.TELECHARGEABLE
+            );
+            docService.ajouterDocument(nouveauDoc, gestSAT);
+
+            boolean contientNouveaute = false;
+            for (Document d : NotificationService.getInstance().listerNouveautes(1)) {
+                if (d.getIdDocument() == nouveauDoc.getIdDocument()) {
+                    contientNouveaute = true;
+                    break;
+                }
+            }
+            affirmer(contientNouveaute,
+                    "Le nouveau document publié dans l'UFR SAT apparaît dans les notifications étudiant.");
+
+            // Nettoyage : suppression du document de test
+            docService.supprimerDocument(nouveauDoc.getIdDocument(), gestSAT);
+        } catch (Exception e) {
+            affirmer(false, "Erreur test notifications : " + e.getMessage());
         }
 
         // -------------------------------------------------------------

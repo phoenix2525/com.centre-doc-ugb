@@ -17,10 +17,12 @@ public class DataStore {
     private final Map<Integer, Utilisateur> utilisateurs = new LinkedHashMap<>();
     private final Map<Integer, Document> documents = new LinkedHashMap<>();
     private final List<Telechargement> telechargements = new ArrayList<>();
+    private final Map<Integer, DemandeAcces> demandesAcces = new LinkedHashMap<>();
 
     private int nextUserId = 100;
     private int nextDocId = 100;
     private int nextTelechargementId = 100;
+    private int nextDemandeId = 100;
 
     private DataStore() {
         initialiserDonnees();
@@ -46,7 +48,7 @@ public class DataStore {
 
         // 2. Utilisateurs
         // Admin
-        Administrateur admin = new Administrateur(1, "DIOP", "Amadou", "admin@ugb.edu.sn", "admin123");
+        Administrateur admin = new Administrateur(1, "NDIAYE", "Ibrahima", "admin@ugb.edu.sn", "admin123");
         utilisateurs.put(admin.getIdUtilisateur(), admin);
 
         // Gestionnaires
@@ -123,6 +125,11 @@ public class DataStore {
         enregistrerTelechargement(new Telechargement(2, 5, 2, new Timestamp(System.currentTimeMillis() - 86400000L * 3)));
         enregistrerTelechargement(new Telechargement(3, 6, 4, new Timestamp(System.currentTimeMillis() - 86400000L * 2)));
         enregistrerTelechargement(new Telechargement(4, 7, 4, new Timestamp(System.currentTimeMillis() - 86400000L)));
+
+        // 5. Demande d'accès en attente (Bonus 3.3 : document sous embargo)
+        enregistrerDemandeAcces(new DemandeAcces(1, 6, 5,
+                "Travaux de recherche encadrés par le Département de Cybersécurité — besoin de consulter le mémoire sous embargo.",
+                StatutDemande.EN_ATTENTE, new Timestamp(System.currentTimeMillis() - 86400000L * 2)));
     }
 
     private void ajouterUfr(Ufr ufr) {
@@ -159,11 +166,38 @@ public class DataStore {
         telechargements.add(t);
     }
 
+    private void enregistrerDemandeAcces(DemandeAcces da) {
+        if (da.getIdDemande() <= 0) {
+            da.setIdDemande(nextDemandeId++);
+        }
+        enrichirDemandeAcces(da);
+        demandesAcces.put(da.getIdDemande(), da);
+    }
+
+    /**
+     * Alimente les métadonnées d'affichage d'une demande d'accès (étudiant et document).
+     */
+    private void enrichirDemandeAcces(DemandeAcces da) {
+        Utilisateur u = utilisateurs.get(da.getIdEtudiant());
+        if (u != null) {
+            da.setNomEtudiant(u.getNomComplet());
+            da.setEmailEtudiant(u.getEmail());
+            da.setCodeEtudiant(u.getCodeEtudiant());
+        }
+        Document d = documents.get(da.getIdDocument());
+        if (d != null) {
+            da.setTitreDocument(d.getTitre());
+            da.setUfrDocument(d.getNomUfr());
+        }
+    }
+
     public Map<Integer, Ufr> getUfrs() { return ufrs; }
     public Map<Integer, Utilisateur> getUtilisateurs() { return utilisateurs; }
     public Map<Integer, Document> getDocuments() { return documents; }
     public List<Telechargement> getTelechargements() { return telechargements; }
+    public Map<Integer, DemandeAcces> getDemandes() { return demandesAcces; }
 
     public int getNextUserId() { return nextUserId++; }
     public int getNextDocId() { return nextDocId++; }
+    public int getNextDemandeId() { return nextDemandeId++; }
 }

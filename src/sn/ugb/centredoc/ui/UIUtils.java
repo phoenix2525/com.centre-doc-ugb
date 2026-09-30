@@ -15,48 +15,48 @@ import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 
 /**
- * Utilitaires d'interface graphique moderne et dynamique pour le Système
+ * Utilitaires d'interface graphique pour le Système
  * d'Information des Centres de Documentation de l'Université Gaston Berger (UGB).
- * Offre un design contemporain, aéré et haute accessibilité (WCAG AA).
+ * Regroupe les couleurs, polices et composants graphiques réutilisés dans toute l'application.
  */
 public class UIUtils {
     // =========================================================================
-    // Palette institutionnelle UGB / Stitch (Academic Prestige & High-Density Rigor)
+    // Palette de couleurs de la charte graphique du projet
     // =========================================================================
-    public static final Color BLEU_UGB = new Color(29, 78, 216);         // #1D4ED8 - Bleu institutionnel saphir (Stitch Primary)
-    public static final Color BLEU_SECONDAIRE = new Color(15, 23, 42);   // #0F172A - Bleu nuit ardoise / Slate (Stitch Secondary)
+    public static final Color BLEU_UGB = new Color(29, 78, 216);         // #1D4ED8 - Bleu principal du projet
+    public static final Color BLEU_SECONDAIRE = new Color(15, 23, 42);   // #0F172A - Bleu nuit (ardoise)
     public static final Color BLEU_HOVER = new Color(30, 64, 175);       // #1E40AF - Bleu foncé survol
     public static final Color BLEU_PRESSE = new Color(23, 37, 84);       // #172554 - Bleu profond enfoncé
     public static final Color BLEU_SELECTION = new Color(224, 238, 255);  // #E0EEFF - Fond sélection table doux
 
-    public static final Color ACCENT_EMERAUDE = new Color(5, 150, 105);  // #059669 - Émeraude académique (Stitch Tertiary / Success)
+    public static final Color ACCENT_EMERAUDE = new Color(5, 150, 105);  // #059669 - Émeraude (succès, téléchargement)
     public static final Color ACCENT_HOVER = new Color(4, 120, 87);      // #047857
     public static final Color ACCENT_PRESSE = new Color(6, 95, 70);
 
-    public static final Color OR_UGB = new Color(217, 119, 6);           // #D97706 - Ambre institutionnel Stitch
+    public static final Color OR_UGB = new Color(217, 119, 6);           // #D97706 - Ambre institutionnel
     public static final Color OR_HOVER = new Color(245, 158, 11);         // #F59E0B
     public static final Color OR_PRESSE = new Color(180, 83, 9);          // #B45309
     public static final Color TEXTE_ACCENT_DORE = new Color(180, 83, 9);
 
-    public static final Color FOND_CLAIR = new Color(248, 249, 255);     // #F8F9FF - Surface Stitch très épurée
+    public static final Color FOND_CLAIR = new Color(248, 249, 255);     // #F8F9FF - Fond très clair des fenêtres
     public static final Color FOND_CARTE = Color.WHITE;
     public static final Color BLANC = Color.WHITE;
 
-    // Typographie contrastée haute lisibilité Stitch
+    // Typographie contrastée, lisible à l'écran
     public static final Color TEXTE_FONCE = new Color(11, 28, 48);       // #0B1C30 - Encre profonde
     public static final Color TEXTE_SECONDAIRE = new Color(67, 70, 85);  // #434655 - Gris ardoise soutenu
     public static final Color TEXTE_GRIS = new Color(116, 118, 134);     // #747686 - Gris contour
-    public static final Color BORDURE_DOUCE = new Color(226, 232, 240);  // #E2E8F0 - Bordure subtile Stitch
+    public static final Color BORDURE_DOUCE = new Color(226, 232, 240);  // #E2E8F0 - Bordure subtile
     public static final Color BORDURE_ACCENT = new Color(203, 213, 225); // #CBD5E1
     public static final Color LIGNE_ALTERNEE = new Color(248, 250, 253);
 
-    // Couleurs sémantiques modernes Stitch
+    // Couleurs sémantiques (succès, avertissement, erreur)
     public static final Color VERT_SUCCES = new Color(5, 150, 105);      // #059669
     public static final Color ORANGE_AVERT = new Color(234, 88, 12);     // #EA580C
     public static final Color ORANGE_AVERT_FONCE = new Color(194, 65, 12);// #C2410C
     public static final Color ROUGE_DANGER = new Color(220, 38, 38);     // #DC2626
 
-    // Badges / Pilules d'état Stitch
+    // Couleurs des badges d'état
     public static final Color BADGE_VERT_FOND = new Color(236, 253, 245);
     public static final Color BADGE_VERT_TEXT = new Color(4, 120, 87);
 
@@ -990,10 +990,10 @@ public class UIUtils {
     }
 
     /**
-     * Barre de navigation supérieure institutionnelle conforme à la maquette Stitch.
-     * Inclut le logo UGB, le titre officiel, le badge de rôle, le statut BD et l'avatar utilisateur.
+     * Barre d'en-tête affichée en haut de chaque fenêtre de l'application.
+     * Contient le logo UGB, le titre, le badge de rôle, l'état de la base et l'utilisateur connecté.
      */
-    public static JPanel creerTopBarStitch(String titreApp, String sousTitre, String rolePill,
+    public static JPanel creerBarreEnTete(String titreApp, String sousTitre, String rolePill,
                                           String utilisateur, boolean bdConnectee, JButton btnDeconnexion) {
         JPanel bar = new JPanel(new BorderLayout(16, 0)) {
             @Override
@@ -1032,7 +1032,7 @@ public class UIUtils {
         gauche.add(titleBlock);
         bar.add(gauche, BorderLayout.WEST);
 
-        // 2. Partie centrale : Badge de rôle actif Stitch + Indicateur Statut BD
+        // 2. Partie centrale : Badge de rôle + indicateur d'état de la base
         JPanel centre = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
         centre.setOpaque(false);
 
@@ -1109,9 +1109,10 @@ public class UIUtils {
     }
 
     /**
-     * Bannière Héro Stitch pour les tableaux de bord (Gestionnaire & Admin).
+     * Bandeau d'accueil sombre utilisé en haut des tableaux de bord (gestionnaire et admin).
+     * Affiche un badge institutionnel, un titre principal et des boutons d'action rapide.
      */
-    public static JPanel creerHeroBannerStitch(String badgeTag, String titrePrincipal,
+    public static JPanel creerBandeauAccueil(String badgeTag, String titrePrincipal,
                                               String description, java.util.List<JButton> actionsRapides) {
         JPanel hero = new PanelDegrade(new Color(15, 23, 42), new Color(30, 58, 138), false);
         hero.setBorder(new EmptyBorder(18, 24, 18, 24));
@@ -1176,14 +1177,14 @@ public class UIUtils {
     }
 
     /**
-     * Carte d'indicateur KPI haute densité conforme à Stitch.
+     * Carte d'indicateur clé (KPI) utilisée dans les tableaux de bord.
      */
-    public static JPanel creerKPICardStitch(String titre, String valeur, String detail, String icone, Color accent) {
+    public static JPanel creerCarteIndicateur(String titre, String valeur, String detail, String icone, Color accent) {
         JLabel lblVal = new JLabel(valeur);
-        return creerKPICardStitch(titre, lblVal, detail, icone, accent);
+        return creerCarteIndicateur(titre, lblVal, detail, icone, accent);
     }
 
-    public static JPanel creerKPICardStitch(String titre, JLabel lblVal, String detail, String icone, Color accent) {
+    public static JPanel creerCarteIndicateur(String titre, JLabel lblVal, String detail, String icone, Color accent) {
         JPanel card = new JPanel(new BorderLayout(0, 6)) {
             @Override
             protected void paintComponent(Graphics g) {

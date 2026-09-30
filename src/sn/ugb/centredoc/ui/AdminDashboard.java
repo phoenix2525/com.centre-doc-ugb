@@ -78,8 +78,8 @@ public class AdminDashboard extends JFrame {
             this.dispose();
         });
 
-        // TopBar Stitch
-        JPanel topBar = UIUtils.creerTopBarStitch(
+        // Barre d'en-tête
+        JPanel topBar = UIUtils.creerBarreEnTete(
                 "Système d'Information Doc UGB",
                 "GOUVERNANCE CENTRALE & MONITORING",
                 "Supervision Admin",
@@ -127,7 +127,7 @@ public class AdminDashboard extends JFrame {
 
         // Formulaire latéral d'édition / création
         JPanel formWrapper = new JPanel(new BorderLayout());
-        formWrapper.setPreferredSize(new Dimension(360, 0));
+        formWrapper.setPreferredSize(new Dimension(400, 0));
         formWrapper.setBorder(UIUtils.creerBordureCarte("Fiche Gestionnaire"));
         formWrapper.setBackground(UIUtils.BLANC);
 
@@ -165,7 +165,11 @@ public class AdminDashboard extends JFrame {
         gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.3; form.add(new JLabel("UFR :"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.7; form.add(comboUfrG, gbc);
 
-        formWrapper.add(form, BorderLayout.CENTER);
+        JScrollPane scrollForm = new JScrollPane(form, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollForm.setBorder(null);
+        scrollForm.setOpaque(false);
+        scrollForm.getViewport().setOpaque(false);
+        formWrapper.add(scrollForm, BorderLayout.CENTER);
 
         // Boutons d'actions
         JPanel actions = new JPanel(new GridLayout(4, 1, 6, 6));
@@ -208,7 +212,7 @@ public class AdminDashboard extends JFrame {
         txtRechercheUser = UIUtils.creerChampTexte(18);
         filtrePanel.add(txtRechercheUser);
 
-        // Recherche dynamique à la frappe (Accessibilité & Modernité)
+        // Recherche dynamique à la frappe
         txtRechercheUser.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { chargerUtilisateurs(); }
             @Override public void removeUpdate(DocumentEvent e) { chargerUtilisateurs(); }
@@ -298,27 +302,6 @@ public class AdminDashboard extends JFrame {
         panel.add(south, BorderLayout.SOUTH);
 
         return panel;
-    }
-
-    private JPanel creerCarteStat(String titre, JLabel labelValeur) {
-        JPanel c = new JPanel(new BorderLayout());
-        c.setBackground(UIUtils.BLANC);
-        c.setBorder(new EmptyBorder(12, 16, 12, 16));
-
-        JLabel lblTitre = new JLabel(titre);
-        lblTitre.setFont(UIUtils.FONT_GRAS);
-        lblTitre.setForeground(UIUtils.TEXTE_SECONDAIRE);
-        c.add(lblTitre, BorderLayout.NORTH);
-
-        labelValeur.setFont(new Font("Segoe UI", Font.BOLD, 32));
-        labelValeur.setForeground(UIUtils.BLEU_UGB);
-        c.add(labelValeur, BorderLayout.CENTER);
-
-        c.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIUtils.BORDURE_DOUCE, 1, true),
-                new EmptyBorder(10, 14, 10, 14)
-        ));
-        return c;
     }
 
     private void chargerDonnees() {

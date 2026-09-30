@@ -15,6 +15,11 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 
+if exist src\resources (
+    if not exist bin\resources mkdir bin\resources
+    xcopy /y /s /q src\resources bin\resources > nul
+)
+
 echo [2/2] Creation de l'archive JAR executable 'centre_doc.jar'...
 jar cfe centre_doc.jar sn.ugb.centredoc.Main -C bin .
 

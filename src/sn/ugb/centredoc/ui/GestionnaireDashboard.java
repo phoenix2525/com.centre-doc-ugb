@@ -1,10 +1,10 @@
 package sn.ugb.centredoc.ui;
 
 import sn.ugb.centredoc.dao.DAOFactory;
-import sn.ugb.centredoc.dao.DBConnection;
 import sn.ugb.centredoc.exception.*;
 import sn.ugb.centredoc.model.*;
 import sn.ugb.centredoc.service.AuthService;
+import sn.ugb.centredoc.service.DemandeAccesService;
 import sn.ugb.centredoc.service.DocumentService;
 import sn.ugb.centredoc.service.UtilisateurService;
 
@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Tableau de bord Gestionnaire de Centre de Documentation (Module 2 : Gestion du Fonds Documentaire & Enrôlement Étudiant).
- * Règle d'or 4 : Un gestionnaire ne gère QUE les documents de son UFR.
+ * Règle 4 du sujet : un gestionnaire ne gère QUE les documents de son UFR.
  * Personnalisation forte selon l'UFR d'affectation (ex: UFR SAT).
  * Module d'enrôlement des étudiants avec alerte en cas de choix d'une autre UFR.
  */
@@ -27,6 +27,7 @@ public class GestionnaireDashboard extends JFrame {
     private final Utilisateur gestionnaire;
     private final DocumentService documentService = new DocumentService();
     private final UtilisateurService utilisateurService = new UtilisateurService();
+    private final DemandeAccesService demandeAccesService = new DemandeAccesService();
     private Ufr ufrGestionnaire;
 
     // Composants Onglet Fonds Documentaire
@@ -54,24 +55,25 @@ public class GestionnaireDashboard extends JFrame {
     private DefaultTableModel modelEtudiants;
     private JTextField txtFiltreEtudiant;
     private JLabel lblNbEtudiants;
-    private JTextField txtEtuNom;
-    private JTextField txtEtuPrenom;
-    private JTextField txtEtuEmail;
-    private JTextField txtEtuCode;
-    private JComboBox<Ufr> comboEtuUfr;
-    private JButton btnValiderEnrolement;
+    private JButton btnEnrolerEtudiant;
     private JButton btnModifierEtudiant;
     private JButton btnSupprimerEtudiant;
+    private JLabel lblEtudiantSelectionne;
     private int idEtudiantSelectionne = 0;
 
     // Composants Onglet Historique
     private JTable tableHistorique;
     private DefaultTableModel modelHistorique;
 
-    // Composants KPIs & Navigation Stitch
+    // Composants Onglet Demandes d'Accès (Bonus 3.3)
+    private JTable tableDemandesAcces;
+    private DefaultTableModel modelDemandesAcces;
+
+    // Composants des indicateurs (KPI)
     private JLabel lblKpiFondsVal;
     private JLabel lblKpiEtudiantsVal;
     private JLabel lblKpiTelechargementsVal;
+    private JLabel lblKpiDisponibiliteVal;
     private JTabbedPane tabbedPane;
 
     public GestionnaireDashboard(Utilisateur gestionnaire) {
@@ -86,6 +88,7 @@ public class GestionnaireDashboard extends JFrame {
         chargerFonds();
         chargerEtudiants();
         chargerHistorique();
+        chargerDemandesAcces();
     }
 
     private void chargerUfrGestionnaire() {
@@ -121,16 +124,16 @@ public class GestionnaireDashboard extends JFrame {
             this.dispose();
         });
 
-        // 1. En-tête composé Stitch : TopBar + Hero Banner UFR + 4 KPI Cards
+        // 1. En-tête : barre supérieure + bandeau UFR + 4 indicateurs
         JPanel headerContainer = new JPanel(new BorderLayout());
         headerContainer.setOpaque(false);
 
-        JPanel topBar = UIUtils.creerTopBarStitch(
+        JPanel topBar = UIUtils.creerBarreEnTete(
                 "Système d'Information Doc UGB",
                 "PORTAIL DES THÈSES & MÉMOIRES",
                 "Gestionnaire UFR " + codeUfr,
                 gestionnaire.getNomComplet(),
-                DBConnection.isMySQLAvailable(),
+                DAOFactory.isUsingJdbc(),
                 btnDeconnexion
         );
         headerContainer.add(topBar, BorderLayout.NORTH);
@@ -138,27 +141,22 @@ public class GestionnaireDashboard extends JFrame {
         tabbedPane = new JTabbedPane();
         tabbedPane.setFont(UIUtils.FONT_SOUS_TITRE);
 
-        // Actions rapides du Hero Banner
+        // Actions rapides du bandeau
         java.util.List<JButton> actionsRapides = new java.util.ArrayList<>();
 
         JButton btnHeroEnroler = UIUtils.creerBoutonEmeraude("👤+ Enrôler un étudiant");
         btnHeroEnroler.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnHeroEnroler.addActionListener(e -> tabbedPane.setSelectedIndex(1));
+        btnHeroEnroler.addActionListener(e -> ouvrirDialogueEnrolement(0));
         actionsRapides.add(btnHeroEnroler);
 
-        JButton btnHeroDeposer = UIUtils.creerBoutonPrimaire("📄+ Déposer une thèse ou mémoire");
-        btnHeroDeposer.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnHeroDeposer.addActionListener(e -> ouvrirDialogueDocument(null));
-        actionsRapides.add(btnHeroDeposer);
-
-        JPanel heroBanner = UIUtils.creerHeroBannerStitch(
+        JPanel heroBanner = UIUtils.creerBandeauAccueil(
                 "CENTRE DE DOCUMENTATION — UFR " + codeUfr + " (" + nomUfr.toUpperCase() + ")",
                 "Pôle d'Archivage & Thèses d'Ingénierie",
                 "Pôle de gestion documentaire des Thèses et Mémoires — Université Gaston Berger de Saint-Louis.",
                 actionsRapides
         );
 
-        // Panneau KPI Stitch
+        // Panneau des indicateurs (KPI)
         JPanel kpiPanel = new JPanel(new GridLayout(1, 4, 12, 0));
         kpiPanel.setOpaque(false);
         kpiPanel.setBorder(new EmptyBorder(10, 16, 10, 16));
@@ -166,11 +164,12 @@ public class GestionnaireDashboard extends JFrame {
         lblKpiFondsVal = new JLabel("0");
         lblKpiEtudiantsVal = new JLabel("0");
         lblKpiTelechargementsVal = new JLabel("0");
+        lblKpiDisponibiliteVal = new JLabel("—");
 
-        JPanel card1 = UIUtils.creerKPICardStitch("FONDS ARCHIVÉ", lblKpiFondsVal, "Thèses & mémoires UFR", "📚", UIUtils.BLEU_UGB);
-        JPanel card2 = UIUtils.creerKPICardStitch("ÉTUDIANTS ENRÔLÉS", lblKpiEtudiantsVal, "Promotion " + codeUfr + " active", "🎓", UIUtils.VERT_SUCCES);
-        JPanel card3 = UIUtils.creerKPICardStitch("TÉLÉCHARGEMENTS", lblKpiTelechargementsVal, "Ce semestre académique", "⬇", UIUtils.OR_UGB);
-        JPanel card4 = UIUtils.creerKPICardStitch("DISPONIBILITÉ DU DÉPÔT", "100%", "Indexation synchronisée", "⚡", UIUtils.ACCENT_EMERAUDE);
+        JPanel card1 = UIUtils.creerCarteIndicateur("FONDS ARCHIVÉ", lblKpiFondsVal, "Thèses & mémoires UFR", "📚", UIUtils.BLEU_UGB);
+        JPanel card2 = UIUtils.creerCarteIndicateur("ÉTUDIANTS ENRÔLÉS", lblKpiEtudiantsVal, "Promotion " + codeUfr + " active", "🎓", UIUtils.VERT_SUCCES);
+        JPanel card3 = UIUtils.creerCarteIndicateur("TÉLÉCHARGEMENTS", lblKpiTelechargementsVal, "Ce semestre académique", "⬇", UIUtils.OR_UGB);
+        JPanel card4 = UIUtils.creerCarteIndicateur("TAUX DE DISPONIBILITÉ", lblKpiDisponibiliteVal, "Part de documents téléchargeables", "⚡", UIUtils.ACCENT_EMERAUDE);
 
         kpiPanel.add(card1);
         kpiPanel.add(card2);
@@ -188,6 +187,7 @@ public class GestionnaireDashboard extends JFrame {
         tabbedPane.addTab("📚 Fonds Documentaire (UFR " + codeUfr + ")", creerOngletFonds());
         tabbedPane.addTab("🎓 Enrôlement des Étudiants", creerOngletEnrolement());
         tabbedPane.addTab("📊 Historique des Téléchargements (UFR " + codeUfr + ")", creerOngletHistorique());
+        tabbedPane.addTab("📩 Demandes d'Accès (UFR " + codeUfr + ")", creerOngletDemandesAcces());
 
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -450,6 +450,119 @@ public class GestionnaireDashboard extends JFrame {
         return panel;
     }
 
+    /**
+     * Onglet Demandes d'Accès (Bonus 3.3) : traitement des demandes des étudiants portant
+     * sur les documents sous embargo de l'UFR du gestionnaire (Règle 4).
+     */
+    private JPanel creerOngletDemandesAcces() {
+        String codeUfr = (ufrGestionnaire != null && ufrGestionnaire.getCode() != null) ? ufrGestionnaire.getCode() : "UFR";
+
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        panel.setBackground(UIUtils.FOND_CLAIR);
+
+        String[] colonnes = {"ID", "Date de la demande", "Étudiant", "Email universitaire", "Code Étudiant",
+                "Document demandé", "Motif", "Statut"};
+        modelDemandesAcces = new DefaultTableModel(colonnes, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tableDemandesAcces = new JTable(modelDemandesAcces);
+        tableDemandesAcces.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        UIUtils.configurerTableModerne(tableDemandesAcces);
+
+        JScrollPane scroll = new JScrollPane(tableDemandesAcces);
+        scroll.setBorder(UIUtils.creerBordureCarte(
+                "Demandes de consultation des documents sous embargo de l'UFR " + codeUfr + " (acceptation = consultation des métadonnées et du résumé uniquement)"));
+        panel.add(scroll, BorderLayout.CENTER);
+
+        JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        south.setOpaque(false);
+
+        JButton btnAccepter = UIUtils.creerBoutonEmeraude("✔ Accepter la demande sélectionnée");
+        btnAccepter.addActionListener(e -> traiterDemandeSelectionnee(true));
+        south.add(btnAccepter);
+
+        JButton btnRefuser = UIUtils.creerBoutonDanger("✖ Refuser la demande sélectionnée");
+        btnRefuser.addActionListener(e -> traiterDemandeSelectionnee(false));
+        south.add(btnRefuser);
+
+        JButton btnRafraichir = UIUtils.creerBoutonSecondaire("🔄 Actualiser les demandes");
+        btnRafraichir.addActionListener(e -> chargerDemandesAcces());
+        south.add(btnRafraichir);
+        panel.add(south, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    /**
+     * Charge les demandes d'accès portant sur les documents de l'UFR du gestionnaire.
+     */
+    private void chargerDemandesAcces() {
+        if (modelDemandesAcces == null) {
+            return;
+        }
+        modelDemandesAcces.setRowCount(0);
+        try {
+            List<DemandeAcces> liste = demandeAccesService.listerPourGestionnaire(gestionnaire);
+            for (DemandeAcces da : liste) {
+                modelDemandesAcces.addRow(new Object[]{
+                        da.getIdDemande(),
+                        da.getDateDemande(),
+                        da.getNomEtudiant(),
+                        da.getEmailEtudiant(),
+                        (da.getCodeEtudiant() != null ? da.getCodeEtudiant() : "—"),
+                        da.getTitreDocument(),
+                        da.getMotif(),
+                        da.getStatut().getLibelle()
+                });
+            }
+        } catch (AccesRefuseException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Accès refusé", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            System.err.println("Erreur chargement demandes d'accès : " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Acceptation ou refus de la demande sélectionnée, après confirmation expresse.
+     */
+    private void traiterDemandeSelectionnee(boolean accepter) {
+        int row = tableDemandesAcces.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Veuillez sélectionner une demande d'accès dans le tableau.",
+                    "Aucune Sélection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int modelRow = tableDemandesAcces.convertRowIndexToModel(row);
+        int idDemande = (int) modelDemandesAcces.getValueAt(modelRow, 0);
+        String etudiant = String.valueOf(modelDemandesAcces.getValueAt(modelRow, 2));
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                (accepter
+                        ? "Accorder l'accès en consultation (métadonnées et résumé) du document sous embargo à :\n\"" + etudiant + "\" ?"
+                        : "Refuser la demande d'accès de :\n\"" + etudiant + "\" ?"),
+                accepter ? "Confirmation d'acceptation" : "Confirmation de refus",
+                JOptionPane.YES_NO_OPTION,
+                accepter ? JOptionPane.QUESTION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                demandeAccesService.traiterDemande(idDemande, accepter, gestionnaire);
+                JOptionPane.showMessageDialog(this,
+                        accepter
+                                ? "Demande acceptée : l'étudiant peut désormais consulter la fiche détaillée du document (téléchargement toujours bloqué)."
+                                : "Demande refusée : l'étudiant en sera informé dans son registre de demandes.",
+                        "Traitement Effectué", JOptionPane.INFORMATION_MESSAGE);
+                chargerDemandesAcces();
+            } catch (AccesRefuseException | DocumentIntrouvableException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Erreur Métier", JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Erreur : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private JPanel creerOngletEnrolement() {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setBorder(new EmptyBorder(12, 12, 12, 12));
@@ -509,7 +622,7 @@ public class GestionnaireDashboard extends JFrame {
         tableEtudiants.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && tableEtudiants.getSelectedRow() != -1) {
                 int modelRow = tableEtudiants.convertRowIndexToModel(tableEtudiants.getSelectedRow());
-                remplirFormulaireEtudiant(modelRow);
+                selectionnerEtudiant(modelRow);
             }
         });
 
@@ -528,11 +641,11 @@ public class GestionnaireDashboard extends JFrame {
 
         panel.add(tablePanel, BorderLayout.CENTER);
 
-        // Partie Droite : Formulaire latéral d'enrôlement et de gestion
-        JPanel formWrapper = new JPanel(new BorderLayout());
-        formWrapper.setPreferredSize(new Dimension(380, 0));
-        formWrapper.setBorder(UIUtils.creerBordureCarte("Enrôlement d'un Nouvel Étudiant"));
-        formWrapper.setBackground(UIUtils.BLANC);
+        // Partie Droite : Panneau d'actions (l'enrôlement s'ouvre dans une mini-fenêtre modale au centre)
+        JPanel actionWrapper = new JPanel(new BorderLayout());
+        actionWrapper.setPreferredSize(new Dimension(340, 0));
+        actionWrapper.setBorder(UIUtils.creerBordureCarte("Gestion des Étudiants"));
+        actionWrapper.setBackground(UIUtils.BLANC);
 
         // Encart de rappel UFR gestionnaire
         JPanel encartUfrInfo = new JPanel(new BorderLayout());
@@ -543,298 +656,138 @@ public class GestionnaireDashboard extends JFrame {
         lblInfoUfrGest.setForeground(UIUtils.BADGE_BLEU_TEXT);
         encartUfrInfo.add(lblInfoUfrGest, BorderLayout.CENTER);
 
-        formWrapper.add(encartUfrInfo, BorderLayout.NORTH);
+        actionWrapper.add(encartUfrInfo, BorderLayout.NORTH);
 
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setOpaque(false);
-        form.setBorder(new EmptyBorder(10, 12, 10, 12));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // Bloc central : bouton d'enrôlement + info + actions sur l'étudiant sélectionné
+        JPanel blocCentral = new JPanel();
+        blocCentral.setLayout(new BoxLayout(blocCentral, BoxLayout.Y_AXIS));
+        blocCentral.setOpaque(false);
+        blocCentral.setBorder(new EmptyBorder(16, 16, 12, 16));
 
-        txtEtuNom = UIUtils.creerChampTexte(16);
-        txtEtuPrenom = UIUtils.creerChampTexte(16);
-        txtEtuEmail = UIUtils.creerChampModerne(16, "prenom.nom@ugb.edu.sn");
-        txtEtuCode = UIUtils.creerChampTexte(16);
-        comboEtuUfr = new JComboBox<>();
-        comboEtuUfr.setFont(UIUtils.FONT_NORMAL);
+        btnEnrolerEtudiant = UIUtils.creerBoutonEmeraude("👤+ Enrôler un étudiant");
+        btnEnrolerEtudiant.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnEnrolerEtudiant.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnEnrolerEtudiant.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        btnEnrolerEtudiant.addActionListener(e -> ouvrirDialogueEnrolement(0));
+        blocCentral.add(btnEnrolerEtudiant);
 
-        chargerListeUfrsDansCombo();
+        blocCentral.add(Box.createVerticalStrut(16));
+        blocCentral.add(UIUtils.creerSeparateur());
+        blocCentral.add(Box.createVerticalStrut(10));
 
-        int row = 0;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35; form.add(new JLabel("Nom :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65; form.add(txtEtuNom, gbc);
+        lblEtudiantSelectionne = new JLabel("<html><i>Aucun étudiant sélectionné.<br>Sélectionnez une ligne du registre pour modifier ou supprimer son compte.</i></html>");
+        lblEtudiantSelectionne.setFont(UIUtils.FONT_PETIT);
+        lblEtudiantSelectionne.setForeground(UIUtils.TEXTE_SECONDAIRE);
+        lblEtudiantSelectionne.setAlignmentX(Component.CENTER_ALIGNMENT);
+        blocCentral.add(lblEtudiantSelectionne);
 
-        row++;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35; form.add(new JLabel("Prénom :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65; form.add(txtEtuPrenom, gbc);
+        blocCentral.add(Box.createVerticalStrut(14));
 
-        row++;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35; form.add(new JLabel("Email (@ugb.edu.sn) :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65; form.add(txtEtuEmail, gbc);
-
-        row++;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35; form.add(new JLabel("Code Étudiant :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65; form.add(txtEtuCode, gbc);
-
-        row++;
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35; form.add(new JLabel("UFR de l'étudiant :"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65; form.add(comboEtuUfr, gbc);
-
-        formWrapper.add(form, BorderLayout.CENTER);
-
-        // Boutons d'actions
-        JPanel actions = new JPanel(new GridLayout(4, 1, 6, 6));
-        actions.setOpaque(false);
-        actions.setBorder(new EmptyBorder(10, 12, 12, 12));
-
-        btnValiderEnrolement = UIUtils.creerBoutonPrimaire("✓ Valider l'Enrôlement");
-        btnValiderEnrolement.addActionListener(e -> validerEnrolementEtudiant());
-        actions.add(btnValiderEnrolement);
-
-        btnModifierEtudiant = UIUtils.creerBoutonAccent("Enregistrer les Modifications");
+        btnModifierEtudiant = UIUtils.creerBoutonAccent("✏ Modifier l'étudiant sélectionné");
         btnModifierEtudiant.setEnabled(false);
+        btnModifierEtudiant.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnModifierEtudiant.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         btnModifierEtudiant.addActionListener(e -> modifierEtudiantSelectionne());
-        actions.add(btnModifierEtudiant);
+        blocCentral.add(btnModifierEtudiant);
 
-        btnSupprimerEtudiant = UIUtils.creerBoutonDanger("Supprimer cet Étudiant");
+        blocCentral.add(Box.createVerticalStrut(8));
+
+        btnSupprimerEtudiant = UIUtils.creerBoutonDanger("🗑 Supprimer l'étudiant sélectionné");
         btnSupprimerEtudiant.setEnabled(false);
+        btnSupprimerEtudiant.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnSupprimerEtudiant.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         btnSupprimerEtudiant.addActionListener(e -> supprimerEtudiantSelectionne());
-        actions.add(btnSupprimerEtudiant);
+        blocCentral.add(btnSupprimerEtudiant);
 
-        JButton btnNouveau = UIUtils.creerBoutonSecondaire("Réinitialiser / Nouvel Enrôlement");
-        btnNouveau.addActionListener(e -> viderFormulaireEtudiant());
-        actions.add(btnNouveau);
+        JScrollPane scrollBloc = new JScrollPane(blocCentral, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollBloc.setBorder(null);
+        scrollBloc.setOpaque(false);
+        scrollBloc.getViewport().setOpaque(false);
+        actionWrapper.add(scrollBloc, BorderLayout.CENTER);
 
-        formWrapper.add(actions, BorderLayout.SOUTH);
-
-        panel.add(formWrapper, BorderLayout.EAST);
+        panel.add(actionWrapper, BorderLayout.EAST);
         return panel;
     }
 
-    private void chargerListeUfrsDansCombo() {
-        comboEtuUfr.removeAllItems();
-        try {
-            List<Ufr> ufrs = DAOFactory.getUfrDAO().listerTous();
-            Ufr ufrSelection = null;
-            for (Ufr u : ufrs) {
-                comboEtuUfr.addItem(u);
-                if (gestionnaire.getIdUfr() != null && u.getIdUfr() == gestionnaire.getIdUfr()) {
-                    ufrSelection = u;
-                }
-            }
-            if (ufrSelection != null) {
-                comboEtuUfr.setSelectedItem(ufrSelection);
-            }
-        } catch (Exception e) {
-            System.err.println("Erreur chargement UFRs : " + e.getMessage());
+    /**
+     * Ouvre la mini-fenêtre modale d'enrôlement / de modification d'un étudiant.
+     * idEtudiantAModifier = 0 : mode création ; > 0 : mode édition.
+     */
+    private void ouvrirDialogueEnrolement(int idEtudiantAModifier) {
+        boolean modeEdition = (idEtudiantAModifier > 0);
+        String nom = null, prenom = null, email = null, code = null;
+
+        if (modeEdition) {
+            int row = tableEtudiants.getSelectedRow();
+            if (row == -1) return;
+            int modelRow = tableEtudiants.convertRowIndexToModel(row);
+            code = (String) modelEtudiants.getValueAt(modelRow, 1);
+            nom = (String) modelEtudiants.getValueAt(modelRow, 2);
+            prenom = (String) modelEtudiants.getValueAt(modelRow, 3);
+            email = (String) modelEtudiants.getValueAt(modelRow, 4);
+        }
+
+        DialogueEnrolementEtudiant dialogue = new DialogueEnrolementEtudiant(
+                this, gestionnaire, utilisateurService, modeEdition, idEtudiantAModifier,
+                nom, prenom, email, code
+        );
+        dialogue.setVisible(true);
+
+        if (dialogue.isSucces()) {
+            chargerEtudiants();
+            reinitialiserSelectionEtudiant();
         }
     }
 
-    private void remplirFormulaireEtudiant(int modelRow) {
+    private void selectionnerEtudiant(int modelRow) {
         idEtudiantSelectionne = (int) modelEtudiants.getValueAt(modelRow, 0);
         String code = (String) modelEtudiants.getValueAt(modelRow, 1);
         String nom = (String) modelEtudiants.getValueAt(modelRow, 2);
         String prenom = (String) modelEtudiants.getValueAt(modelRow, 3);
         String email = (String) modelEtudiants.getValueAt(modelRow, 4);
-        String nomUfr = (String) modelEtudiants.getValueAt(modelRow, 5);
 
-        txtEtuNom.setText(nom);
-        txtEtuPrenom.setText(prenom);
-        txtEtuEmail.setText(email);
-        txtEtuCode.setText(code);
-
-        for (int i = 0; i < comboEtuUfr.getItemCount(); i++) {
-            Ufr u = comboEtuUfr.getItemAt(i);
-            if (nomUfr != null && (nomUfr.contains(u.getCode()) || nomUfr.contains(u.getNom()))) {
-                comboEtuUfr.setSelectedIndex(i);
-                break;
-            }
-        }
+        lblEtudiantSelectionne.setText("<html><b>" + prenom + " " + nom + "</b><br>" + email
+                + "<br>Code : " + code + "</html>");
 
         btnModifierEtudiant.setEnabled(true);
         btnSupprimerEtudiant.setEnabled(true);
-        btnValiderEnrolement.setEnabled(false);
     }
 
-    private void viderFormulaireEtudiant() {
+    private void reinitialiserSelectionEtudiant() {
         idEtudiantSelectionne = 0;
-        txtEtuNom.setText("");
-        txtEtuPrenom.setText("");
-        txtEtuEmail.setText("");
-        txtEtuCode.setText("");
-
-        // Rétablir la sélection par défaut sur l'UFR du gestionnaire
-        if (gestionnaire.getIdUfr() != null) {
-            for (int i = 0; i < comboEtuUfr.getItemCount(); i++) {
-                Ufr u = comboEtuUfr.getItemAt(i);
-                if (u.getIdUfr() == gestionnaire.getIdUfr()) {
-                    comboEtuUfr.setSelectedIndex(i);
-                    break;
-                }
-            }
-        }
-
         tableEtudiants.clearSelection();
+        lblEtudiantSelectionne.setText("<html><i>Aucun étudiant sélectionné.<br>Sélectionnez une ligne du registre pour modifier ou supprimer son compte.</i></html>");
         btnModifierEtudiant.setEnabled(false);
         btnSupprimerEtudiant.setEnabled(false);
-        btnValiderEnrolement.setEnabled(true);
-    }
-
-    private void validerEnrolementEtudiant() {
-        String nom = txtEtuNom.getText().trim();
-        String prenom = txtEtuPrenom.getText().trim();
-        String email = txtEtuEmail.getText().trim();
-        String code = txtEtuCode.getText().trim();
-        Ufr ufrChoisie = (Ufr) comboEtuUfr.getSelectedItem();
-
-        if (nom.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Le nom de l'étudiant est obligatoire.", "Champ manquant", JOptionPane.WARNING_MESSAGE);
-            txtEtuNom.requestFocus();
-            return;
-        }
-        if (prenom.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Le prénom de l'étudiant est obligatoire.", "Champ manquant", JOptionPane.WARNING_MESSAGE);
-            txtEtuPrenom.requestFocus();
-            return;
-        }
-        if (email.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "L'adresse email est obligatoire.", "Champ manquant", JOptionPane.WARNING_MESSAGE);
-            txtEtuEmail.requestFocus();
-            return;
-        }
-        try {
-            AuthService.validerEmailUGB(email);
-        } catch (ChampInvalideException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Format Email Non Conforme", JOptionPane.ERROR_MESSAGE);
-            txtEtuEmail.requestFocus();
-            return;
-        }
-        if (code.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Le code étudiant est obligatoire (ex: P28 0145).", "Champ manquant", JOptionPane.WARNING_MESSAGE);
-            txtEtuCode.requestFocus();
-            return;
-        }
-        if (ufrChoisie == null) {
-            JOptionPane.showMessageDialog(this, "Veuillez sélectionner l'UFR de l'étudiant.", "Champ manquant", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // RÈGLE MÉTIER CLIENT : Avertissement si le gestionnaire choisit une UFR différente de la sienne
-        int idUfrGestionnaire = (gestionnaire.getIdUfr() != null ? gestionnaire.getIdUfr() : 0);
-        if (ufrChoisie.getIdUfr() != idUfrGestionnaire) {
-            DialogueAlerteEnrolementHorsUfr dialogAlerte = new DialogueAlerteEnrolementHorsUfr(
-                    this, nom, prenom, code, ufrGestionnaire, ufrChoisie
-            );
-            dialogAlerte.setVisible(true);
-
-            if (dialogAlerte.getResultat() == DialogueAlerteEnrolementHorsUfr.Resultat.CORRIGER) {
-                // Auto-rectification : réinitialiser sur l'UFR du gestionnaire
-                for (int i = 0; i < comboEtuUfr.getItemCount(); i++) {
-                    Ufr u = comboEtuUfr.getItemAt(i);
-                    if (u != null && u.getIdUfr() == idUfrGestionnaire) {
-                        comboEtuUfr.setSelectedIndex(i);
-                        break;
-                    }
-                }
-                comboEtuUfr.requestFocus();
-                return;
-            } else if (dialogAlerte.getResultat() != DialogueAlerteEnrolementHorsUfr.Resultat.CONFIRMER) {
-                comboEtuUfr.requestFocus();
-                return;
-            }
-        }
-
-        try {
-            Etudiant nouvelEtu = utilisateurService.creerEtudiant(
-                    nom, prenom, email, code, ufrChoisie.getIdUfr(), gestionnaire
-            );
-
-            JOptionPane.showMessageDialog(this,
-                    "Étudiant enrôlé avec succès !\n\n"
-                    + "• Nom & Prénom : " + nouvelEtu.getNomComplet() + "\n"
-                    + "• Code Étudiant : " + nouvelEtu.getCodeEtudiant() + "\n"
-                    + "• Email : " + nouvelEtu.getEmail() + "\n"
-                    + "• UFR de rattachement : " + ufrChoisie.getCode() + " - " + ufrChoisie.getNom(),
-                    "Enrôlement Réussi",
-                    JOptionPane.INFORMATION_MESSAGE);
-
-            viderFormulaireEtudiant();
-            chargerEtudiants();
-        } catch (ChampInvalideException | DoublonException | AccesRefuseException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Règle Métier Non Respectée", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Erreur système lors de l'enrôlement : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     private void modifierEtudiantSelectionne() {
         if (idEtudiantSelectionne <= 0) return;
-
-        String nom = txtEtuNom.getText().trim();
-        String prenom = txtEtuPrenom.getText().trim();
-        String email = txtEtuEmail.getText().trim();
-        String code = txtEtuCode.getText().trim();
-        Ufr ufrChoisie = (Ufr) comboEtuUfr.getSelectedItem();
-
-        if (nom.isEmpty() || prenom.isEmpty() || email.isEmpty() || code.isEmpty() || ufrChoisie == null) {
-            JOptionPane.showMessageDialog(this, "Tous les champs sont obligatoires.", "Champs manquants", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        try {
-            AuthService.validerEmailUGB(email);
-        } catch (ChampInvalideException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Format Email Invalide", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int idUfrGestionnaire = (gestionnaire.getIdUfr() != null ? gestionnaire.getIdUfr() : 0);
-        if (ufrChoisie.getIdUfr() != idUfrGestionnaire) {
-            DialogueAlerteEnrolementHorsUfr dialogAlerte = new DialogueAlerteEnrolementHorsUfr(
-                    this, nom, prenom, code, ufrGestionnaire, ufrChoisie
-            );
-            dialogAlerte.setVisible(true);
-
-            if (dialogAlerte.getResultat() == DialogueAlerteEnrolementHorsUfr.Resultat.CORRIGER) {
-                for (int i = 0; i < comboEtuUfr.getItemCount(); i++) {
-                    Ufr u = comboEtuUfr.getItemAt(i);
-                    if (u != null && u.getIdUfr() == idUfrGestionnaire) {
-                        comboEtuUfr.setSelectedIndex(i);
-                        break;
-                    }
-                }
-                return;
-            } else if (dialogAlerte.getResultat() != DialogueAlerteEnrolementHorsUfr.Resultat.CONFIRMER) {
-                return;
-            }
-        }
-
-        try {
-            utilisateurService.modifierEtudiant(idEtudiantSelectionne, nom, prenom, email, code, ufrChoisie.getIdUfr(), gestionnaire);
-            JOptionPane.showMessageDialog(this, "Informations de l'étudiant mises à jour avec succès !", "Mise à jour Réussie", JOptionPane.INFORMATION_MESSAGE);
-            viderFormulaireEtudiant();
-            chargerEtudiants();
-        } catch (ChampInvalideException | DoublonException | AccesRefuseException | DocumentIntrouvableException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Erreur Métier", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Erreur lors de la modification : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
-        }
+        ouvrirDialogueEnrolement(idEtudiantSelectionne);
     }
 
     private void supprimerEtudiantSelectionne() {
         if (idEtudiantSelectionne <= 0) return;
-        String nomComplet = txtEtuPrenom.getText() + " " + txtEtuNom.getText();
+
+        int row = tableEtudiants.getSelectedRow();
+        String nomComplet = "cet étudiant";
+        String code = "";
+        if (row != -1) {
+            int modelRow = tableEtudiants.convertRowIndexToModel(row);
+            nomComplet = modelEtudiants.getValueAt(modelRow, 3) + " " + modelEtudiants.getValueAt(modelRow, 2);
+            code = (String) modelEtudiants.getValueAt(modelRow, 1);
+        }
 
         int confirm = JOptionPane.showConfirmDialog(this,
-                "Êtes-vous certain de vouloir supprimer le compte de l'étudiant :\n\"" + nomComplet + "\" (Code: " + txtEtuCode.getText() + ") ?",
+                "Êtes-vous certain de vouloir supprimer le compte de l'étudiant :\n\"" + nomComplet + "\" (Code: " + code + ") ?",
                 "Confirmation de suppression", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
                 utilisateurService.supprimerEtudiant(idEtudiantSelectionne, gestionnaire);
                 JOptionPane.showMessageDialog(this, "Étudiant supprimé avec succès.", "Succès", JOptionPane.INFORMATION_MESSAGE);
-                viderFormulaireEtudiant();
+                reinitialiserSelectionEtudiant();
                 chargerEtudiants();
             } catch (AccesRefuseException | DocumentIntrouvableException ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Erreur Métier", JOptionPane.ERROR_MESSAGE);
@@ -913,6 +866,16 @@ public class GestionnaireDashboard extends JFrame {
             lblNbDocs.setText(liste.size() + " document(s) enregistré(s) pour votre UFR.");
             if (lblKpiFondsVal != null) {
                 lblKpiFondsVal.setText(String.valueOf(liste.size()));
+            }
+            if (lblKpiDisponibiliteVal != null) {
+                int nbTelechargeables = 0;
+                for (Document d : liste) {
+                    if (d.isTelechargeable()) {
+                        nbTelechargeables++;
+                    }
+                }
+                int taux = liste.isEmpty() ? 0 : (int) Math.round(nbTelechargeables * 100.0 / liste.size());
+                lblKpiDisponibiliteVal.setText(taux + "%");
             }
         } catch (AccesRefuseException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Accès refusé", JOptionPane.ERROR_MESSAGE);
@@ -1109,7 +1072,9 @@ public class GestionnaireDashboard extends JFrame {
         filePanel.add(btnBrowse, BorderLayout.EAST);
         g.gridx = 1; form.add(filePanel, g);
 
-        dialog.add(form, BorderLayout.CENTER);
+        JScrollPane scrollDialog = new JScrollPane(form, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollDialog.setBorder(null);
+        dialog.add(scrollDialog, BorderLayout.CENTER);
 
         JButton btnEnregistrer = UIUtils.creerBoutonPrimaire(modeEdition ? "Mettre à jour le document" : "Enregistrer dans mon UFR");
         btnEnregistrer.addActionListener(e -> {
@@ -1121,7 +1086,7 @@ public class GestionnaireDashboard extends JFrame {
                 doc.setAuteur(txtAuteur.getText());
                 doc.setEncadrant(txtEncadrant.getText());
                 doc.setAnnee(annee);
-                doc.setIdUfr(gestionnaire.getIdUfr()); // Règle d'or 4 : verrouillé à l'UFR du gestionnaire
+                doc.setIdUfr(gestionnaire.getIdUfr()); // Règle 4 : verrouillé à l'UFR du gestionnaire
                 doc.setNomUfr(gestionnaire.getNomUfr());
                 doc.setDiscipline(txtDiscipline.getText());
                 doc.setResume(txtResume.getText());
@@ -1134,7 +1099,10 @@ public class GestionnaireDashboard extends JFrame {
                     JOptionPane.showMessageDialog(dialog, "Document mis à jour avec succès !", "Succès", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     documentService.ajouterDocument(doc, gestionnaire);
-                    JOptionPane.showMessageDialog(dialog, "Document enregistré avec succès dans le fonds de votre UFR !", "Succès", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(dialog,
+                            "Document enregistré avec succès dans le fonds de votre UFR !\n"
+                            + "🔔 Les étudiants de votre UFR seront notifiés de cette nouvelle publication.",
+                            "Succès", JOptionPane.INFORMATION_MESSAGE);
                 }
                 dialog.dispose();
                 chargerFonds();

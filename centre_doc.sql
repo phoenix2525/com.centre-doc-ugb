@@ -69,6 +69,21 @@ CREATE TABLE telechargements (
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- 6. Création de la table 'demande_acces' (BONUS : formulaire de demande d'accès aux documents sous embargo)
+-- id_demande, etudiant, document, motif, statut, date_demande
+CREATE TABLE demande_acces (
+    id_demande INT AUTO_INCREMENT PRIMARY KEY,
+    id_etudiant INT NOT NULL,
+    id_document INT NOT NULL,
+    motif VARCHAR(500) NOT NULL,
+    statut ENUM('EN_ATTENTE', 'ACCEPTEE', 'REFUSEE') NOT NULL DEFAULT 'EN_ATTENTE',
+    date_demande DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_demande_utilisateur FOREIGN KEY (id_etudiant) REFERENCES utilisateurs(id_utilisateur) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_demande_document FOREIGN KEY (id_document) REFERENCES documents(id_document) 
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- ==============================================================================
 -- JEU DE DONNÉES D'ESSAI (RÉALISTE ET CONFORME AU CADRE UGB)
 -- ==============================================================================
@@ -92,7 +107,7 @@ INSERT INTO ufr (id_ufr, code, nom) VALUES
 --   - GESTIONNAIRE SJP : cheikh.fall@ugb.edu.sn / mdp: pass123 (affecté à l'UFR 2 - SJP)
 --   - ÉTUDIANTS : s'authentifient avec prénom, nom, email (@ugb.edu.sn) et code étudiant (sans mot de passe)
 INSERT INTO utilisateurs (id_utilisateur, nom, prenom, email, mot_de_passe, role, id_ufr, code_etudiant) VALUES
-(1, 'DIOP', 'Amadou', 'admin@ugb.edu.sn', 'admin123', 'ADMIN', NULL, NULL),
+(1, 'NDIAYE', 'Ibrahima', 'admin@ugb.edu.sn', 'admin123', 'ADMIN', NULL, NULL),
 (2, 'DIAKHAME', 'Moussa', 'moussa.diakhame@ugb.edu.sn', 'pass123', 'GESTIONNAIRE', 1, NULL),
 (3, 'DIALLO', 'Aminata', 'aminata.diallo@ugb.edu.sn', 'pass123', 'GESTIONNAIRE', 3, NULL),
 (4, 'FALL', 'Cheikh', 'cheikh.fall@ugb.edu.sn', 'pass123', 'GESTIONNAIRE', 2, NULL),
@@ -199,3 +214,9 @@ INSERT INTO telechargements (id_utilisateur, id_document, date_telechargement) V
 (5, 2, '2026-09-12 15:30:00'),
 (6, 4, '2026-09-14 09:05:41'),
 (7, 4, '2026-09-15 16:48:19');
+
+-- 5. Insertion d'une demande d'accès en attente (BONUS)
+-- L'étudiante Fatou NDIAYE (UFR SEG) demande la consultation du mémoire sous embargo (id 5, UFR SAT).
+-- Cette demande est visible par le gestionnaire de l'UFR SAT (moussa.diakhame@ugb.edu.sn).
+INSERT INTO demande_acces (id_etudiant, id_document, motif, statut, date_demande) VALUES
+(6, 5, 'Travaux de recherche encadrés par le Département de Cybersécurité — besoin de consulter le mémoire sous embargo.', 'EN_ATTENTE', '2026-09-28 11:20:00');

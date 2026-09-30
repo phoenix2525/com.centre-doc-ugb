@@ -26,6 +26,12 @@ public class UtilisateurService {
         }
     }
 
+    private void verifierDroitAdminOuGestionnaire(Utilisateur operateur) throws AccesRefuseException {
+        if (operateur == null || (operateur.getRole() != Role.ADMIN && operateur.getRole() != Role.GESTIONNAIRE)) {
+            throw new AccesRefuseException("Accès refusé : Seul un administrateur ou un gestionnaire peut effectuer cette action.");
+        }
+    }
+
     /**
      * Crée un nouveau compte gestionnaire affecté à une UFR.
      */
@@ -152,12 +158,12 @@ public class UtilisateurService {
     }
 
     /**
-     * Enregistre un nouvel étudiant dans le système.
+     * Enregistre un nouvel étudiant dans le système (par un administrateur ou un gestionnaire).
      */
     public Etudiant creerEtudiant(String nom, String prenom, String email, String codeEtudiant,
                                  Integer idUfr, Utilisateur operateur)
             throws AccesRefuseException, ChampInvalideException, DoublonException, CentreDocException {
-        verifierDroitAdmin(operateur);
+        verifierDroitAdminOuGestionnaire(operateur);
 
         if (nom == null || nom.trim().isEmpty()) {
             throw new ChampInvalideException("Le nom de l'étudiant est obligatoire.");
@@ -191,6 +197,124 @@ public class UtilisateurService {
             throw e;
         } catch (Exception e) {
             throw new CentreDocException("Erreur lors de la création de l'étudiant : " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Modifie les informations d'un étudiant existant (par un administrateur ou un gestionnaire).
+     */
+    public void modifierEtudiant(int idEtudiant, String nom, String prenom, String email,
+                                 String codeEtudiant, Integer idUfr, Utilisateur operateur)
+            throws AccesRefuseException, ChampInvalideException, DoublonException, DocumentIntrouvableException, CentreDocException {
+        verifierDroitAdminOuGestionnaire(operateur);
+
+        if (nom == null || nom.trim().isEmpty()) {
+            throw new ChampInvalideException("Le nom de l'étudiant est obligatoire.");
+        }
+        if (prenom == null || prenom.trim().isEmpty()) {
+            throw new ChampInvalideException("Le prénom de l'étudiant est obligatoire.");
+        }
+        AuthService.validerEmailUGB(email);
+        if (codeEtudiant == null || codeEtudiant.trim().isEmpty()) {
+            throw new ChampInvalideException("Le code étudiant est obligatoire.");
+        }
+
+        try {
+            Utilisateur existant = utilisateurDAO.trouverParId(idEtudiant);
+            if (existant == null) {
+                throw new DocumentIntrouvableException("Étudiant introuvable (ID " + idEtudiant + ").");
+            }
+            if (existant.getRole() != Role.ETUDIANT) {
+                throw new AccesRefuseException("L'utilisateur ciblé n'est pas un étudiant.");
+            }
+
+            if (utilisateurDAO.existeEmail(email.trim(), idEtudiant)) {
+                throw new DoublonException("L'email " + email + " est déjà associé à un autre compte.");
+            }
+            if (utilisateurDAO.existeCodeEtudiant(codeEtudiant.trim(), idEtudiant)) {
+                throw new DoublonException("Le code étudiant " + codeEtudiant + " est déjà attribué.");
+            }
+
+            existant.setNom(nom.trim().toUpperCase());
+            existant.setPrenom(prenom.trim());
+            existant.setEmail(email.trim().toLowerCase());
+            existant.setCodeEtudiant(codeEtudiant.trim().toUpperCase());
+            existant.setIdUfr(idUfr);
+            if (idUfr != null && idUfr > 0) {
+                Ufr ufr = ufrDAO.trouverParId(idUfr);
+                if (ufr != null) {
+                    existant.setNomUfr(ufr.getNom());
+                }
+            } else {
+                existant.setNomUfr(null);
+            }
+
+            utilisateurDAO.modifier(existant);
+        } catch (CentreDocException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CentreDocException("Erreur lors de la modification de l'étudiant : " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Supprime un compte étudiant (par un administrateur ou un gestionnaire).
+     */
+    public void supprimerEtudiant(int idEtudiant, Utilisateur operateur)
+            throws AccesRefuseException, DocumentIntrouvableException, CentreDocException {
+        verifierDroitAdminOuGestionnaire(operateur);
+        try {
+            Utilisateur existant = utilisateurDAO.trouverParId(idEtudiant);
+            if (existant == null) {
+                throw new DocumentIntrouvableException("Étudiant introuvable (ID " + idEtudiant + ").");
+            }
+            if (existant.getRole() != Role.ETUDIANT) {
+                throw new AccesRefuseException("L'utilisateur ciblé n'est pas un étudiant.");
+            }
+            utilisateurDAO.supprimer(idEtudiant);
+        } catch (CentreDocException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CentreDocException("Erreur lors de la suppression de l'étudiant : " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Liste l'ensemble des étudiants (accessible à l'admin et aux gestionnaires).
+     */
+    public List<Utilisateur> listerEtudiants(Utilisateur operateur) throws AccesRefuseException, CentreDocException {
+        verifierDroitAdminOuGestionnaire(operateur);
+        try {
+            return utilisateurDAO.listerParRole(Role.ETUDIANT);
+        } catch (Exception e) {
+            throw new CentreDocException("Erreur lors de la récupération des étudiants : " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Recherche des étudiants par nom, prénom, email, code ou nom UFR.
+     */
+    public List<Utilisateur> rechercherEtudiants(String critere, Utilisateur operateur) throws AccesRefuseException, CentreDocException {
+        verifierDroitAdminOuGestionnaire(operateur);
+        try {
+            List<Utilisateur> etudiants = utilisateurDAO.listerParRole(Role.ETUDIANT);
+            if (critere == null || critere.trim().isEmpty()) {
+                return etudiants;
+            }
+            String c = critere.trim().toLowerCase();
+            List<Utilisateur> resultat = new java.util.ArrayList<>();
+            for (Utilisateur u : etudiants) {
+                if (u.getNom().toLowerCase().contains(c) ||
+                    u.getPrenom().toLowerCase().contains(c) ||
+                    u.getEmail().toLowerCase().contains(c) ||
+                    (u.getCodeEtudiant() != null && u.getCodeEtudiant().toLowerCase().contains(c)) ||
+                    (u.getNomUfr() != null && u.getNomUfr().toLowerCase().contains(c))) {
+                    resultat.add(u);
+                }
+            }
+            return resultat;
+        } catch (Exception e) {
+            throw new CentreDocException("Erreur lors de la recherche des étudiants : " + e.getMessage(), e);
         }
     }
 

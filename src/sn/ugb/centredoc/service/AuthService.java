@@ -67,7 +67,7 @@ public class AuthService {
 
     /**
      * Authentification pour les étudiants SANS mot de passe (prénom, nom, email UGB et code étudiant).
-     * Règle d'or du sujet : les étudiants ne saisissent pas de mot de passe.
+     * Règle 7 du sujet : les étudiants ne saisissent pas de mot de passe.
      */
     public Etudiant authentifierEtudiant(String prenom, String nom, String email, String codeEtudiant)
             throws AuthentificationException, ChampInvalideException {

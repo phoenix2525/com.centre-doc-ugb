@@ -14,9 +14,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 /**
- * Portail d'authentification institutionnel UGB Docs conforme aux spécifications Stitch
- * (Academic Prestige & High-Density Rigor).
- * Présente une disposition côte à côte (Master Cards) pour l'accès étudiant sans mot de passe
+ * Fenêtre de connexion de l'application (écran d'accueil).
+ * Présente deux cartes côte à côte : l'accès étudiant sans mot de passe
  * et l'espace réservé au personnel universitaire et à l'administration.
  */
 public class LoginFrame extends JFrame {
@@ -45,7 +44,7 @@ public class LoginFrame extends JFrame {
         setMinimumSize(new Dimension(980, 720));
         setLocationRelativeTo(null);
 
-        // Fond surface Stitch #F8F9FF avec dégradé subtil vers le blanc
+        // Fond de la fenêtre : dégradé subtil du bleu très clair vers le blanc
         JPanel backgroundPanel = new UIUtils.PanelDegrade(
                 new Color(248, 249, 255),
                 new Color(238, 244, 255),
@@ -55,7 +54,7 @@ public class LoginFrame extends JFrame {
         setContentPane(backgroundPanel);
 
         // =====================================================================
-        // 1. Barre Institutionnelle Supérieure (Top Utility Bar Stitch)
+        // 1. Barre institutionnelle supérieure
         // =====================================================================
         JPanel topUtilityBar = new JPanel(new BorderLayout(14, 0)) {
             @Override
@@ -107,20 +106,20 @@ public class LoginFrame extends JFrame {
         backgroundPanel.add(topUtilityBar, BorderLayout.NORTH);
 
         // =====================================================================
-        // 2. Zone Centrale : Hero Banner institutionnel + Double Carte Stitch
+        // 2. Zone centrale : bandeau d'accueil + les deux cartes de connexion
         // =====================================================================
         JPanel centerWrapper = new JPanel();
         centerWrapper.setLayout(new BoxLayout(centerWrapper, BoxLayout.Y_AXIS));
         centerWrapper.setOpaque(false);
         centerWrapper.setBorder(new EmptyBorder(14, 28, 12, 28));
 
-        // Sub-hero Pill + Titre principal
+        // Badge + titre principal
         JPanel heroHeader = new JPanel();
         heroHeader.setLayout(new BoxLayout(heroHeader, BoxLayout.Y_AXIS));
         heroHeader.setOpaque(false);
         heroHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Pill "Fonds Documentaire Numérique Institutionnel"
+        // Badge "Fonds Documentaire Numérique Institutionnel"
         JPanel tagPill = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 4)) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -159,24 +158,24 @@ public class LoginFrame extends JFrame {
 
         centerWrapper.add(heroHeader);
 
-        // Double Carte Côte à Côte Stitch
+        // Les deux cartes côte à côte
         JPanel cardsContainer = new JPanel(new GridLayout(1, 2, 22, 0));
         cardsContainer.setOpaque(false);
         cardsContainer.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Carte 1 : Consultation Étudiante (Sans mot de passe)
-        JPanel cardEtudiant = creerCarteEtudiantStitch();
+        JPanel cardEtudiant = creerCarteEtudiant();
         cardsContainer.add(cardEtudiant);
 
         // Carte 2 : Administration & Enseignants (Identifiant + Mot de passe)
-        JPanel cardPersonnel = creerCartePersonnelStitch();
+        JPanel cardPersonnel = creerCartePersonnel();
         cardsContainer.add(cardPersonnel);
 
         centerWrapper.add(cardsContainer);
         backgroundPanel.add(centerWrapper, BorderLayout.CENTER);
 
         // =====================================================================
-        // 3. Pied de Page Stitch : Raccourcis Démo + Statut BD & Footer
+        // 3. Pied de page : raccourcis de démonstration + état de la base
         // =====================================================================
         JPanel footerWrapper = new JPanel(new BorderLayout(0, 6));
         footerWrapper.setOpaque(false);
@@ -232,7 +231,7 @@ public class LoginFrame extends JFrame {
         });
         barRaccourcis.add(btnDemoGest);
 
-        JButton btnDemoAdmin = UIUtils.creerBoutonSecondaire("🛡 Admin Central : Amadou DIOP");
+        JButton btnDemoAdmin = UIUtils.creerBoutonSecondaire("🛡 Admin Central : Ibrahima NDIAYE");
         btnDemoAdmin.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         btnDemoAdmin.addActionListener(e -> {
             txtPersoEmail.setText("admin@ugb.edu.sn");
@@ -247,7 +246,7 @@ public class LoginFrame extends JFrame {
 
         footerWrapper.add(barRaccourcis, BorderLayout.NORTH);
 
-        // Barre d'état inférieure Stitch
+        // Barre d'état inférieure
         JPanel bottomStatusBar = new JPanel(new BorderLayout());
         bottomStatusBar.setOpaque(false);
 
@@ -265,7 +264,7 @@ public class LoginFrame extends JFrame {
         backgroundPanel.add(footerWrapper, BorderLayout.SOUTH);
     }
 
-    private JPanel creerCarteEtudiantStitch() {
+    private JPanel creerCarteEtudiant() {
         JPanel carte = new JPanel(new BorderLayout(0, 10)) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -304,11 +303,6 @@ public class LoginFrame extends JFrame {
         lblPill.setForeground(UIUtils.BLEU_UGB);
         pillAcces.add(lblPill);
         top.add(pillAcces, BorderLayout.WEST);
-
-        JLabel lblSync = new JLabel("ID: 8-UFR-SYNC");
-        lblSync.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-        lblSync.setForeground(UIUtils.TEXTE_GRIS);
-        top.add(lblSync, BorderLayout.EAST);
 
         carte.add(top, BorderLayout.NORTH);
 
@@ -372,7 +366,7 @@ public class LoginFrame extends JFrame {
         body.add(form);
         carte.add(body, BorderLayout.CENTER);
 
-        // Bouton de validation primaire Stitch
+        // Bouton de validation étudiant
         JPanel actions = new JPanel(new BorderLayout());
         actions.setOpaque(false);
         actions.setBorder(new EmptyBorder(8, 0, 0, 0));
@@ -394,7 +388,7 @@ public class LoginFrame extends JFrame {
         return carte;
     }
 
-    private JPanel creerCartePersonnelStitch() {
+    private JPanel creerCartePersonnel() {
         JPanel carte = new JPanel(new BorderLayout(0, 10)) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -412,7 +406,7 @@ public class LoginFrame extends JFrame {
         carte.setOpaque(false);
         carte.setBorder(new EmptyBorder(18, 20, 16, 20));
 
-        // Haut : Badge Espace Réservé + Statut SSO
+        // Haut : Badge d'accès réservé
         JPanel top = new JPanel(new BorderLayout());
         top.setOpaque(false);
 
@@ -433,11 +427,6 @@ public class LoginFrame extends JFrame {
         lblPill.setForeground(UIUtils.BLEU_SECONDAIRE);
         pillAcces.add(lblPill);
         top.add(pillAcces, BorderLayout.WEST);
-
-        JLabel lblSso = new JLabel("SSO-KERBEROS");
-        lblSso.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-        lblSso.setForeground(UIUtils.TEXTE_GRIS);
-        top.add(lblSso, BorderLayout.EAST);
 
         carte.add(top, BorderLayout.NORTH);
 
@@ -481,7 +470,7 @@ public class LoginFrame extends JFrame {
         body.add(form);
         carte.add(body, BorderLayout.CENTER);
 
-        // Bouton de validation sombre Stitch
+        // Bouton de connexion personnel
         JPanel actions = new JPanel(new BorderLayout());
         actions.setOpaque(false);
         actions.setBorder(new EmptyBorder(8, 0, 0, 0));

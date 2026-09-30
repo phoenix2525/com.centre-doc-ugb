@@ -7,9 +7,9 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 /**
- * Boîte de dialogue modale de contrôle décanal et d'avertissement d'enrôlement hors UFR.
- * Conforme aux spécifications graphiques Stitch (Academic Prestige & High-Density Rigor).
- * Permet au gestionnaire de confirmer l'affectation ciblée ou de corriger automatiquement vers son UFR.
+ * Boîte de dialogue modale d'avertissement lors d'un enrôlement d'étudiant hors UFR.
+ * Permet au gestionnaire de confirmer l'affectation à une autre UFR ou de
+ * rectifier automatiquement vers son propre UFR.
  */
 public class DialogueAlerteEnrolementHorsUfr extends JDialog {
 
@@ -50,7 +50,7 @@ public class DialogueAlerteEnrolementHorsUfr extends JDialog {
         root.setPreferredSize(new Dimension(540, 460));
 
         // =====================================================================
-        // 1. En-tête : Icône d'avertissement + Titres Stitch
+        // 1. En-tête : Icône d'avertissement + Titres
         // =====================================================================
         JPanel headerPanel = new JPanel(new BorderLayout(14, 0));
         headerPanel.setOpaque(false);
@@ -165,7 +165,7 @@ public class DialogueAlerteEnrolementHorsUfr extends JDialog {
         root.add(centerPanel, BorderLayout.CENTER);
 
         // =====================================================================
-        // 3. Pied de page : 2 Boutons d'action Stitch
+        // 3. Pied de page : 2 Boutons d'action
         // =====================================================================
         JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         footerPanel.setOpaque(false);
@@ -179,7 +179,7 @@ public class DialogueAlerteEnrolementHorsUfr extends JDialog {
         });
         footerPanel.add(btnCorriger);
 
-        // Bouton 2 : Confirmer l'affectation à l'autre UFR (Bouton ambre/orange Stitch)
+        // Bouton 2 : Confirmer l'affectation à l'autre UFR (bouton ambre)
         UIUtils.BoutonModerne btnConfirmer = new UIUtils.BoutonModerne(
                 "✓ Confirmer l'affectation à l'UFR " + codeUfrCible,
                 new Color(217, 119, 6),  // #D97706

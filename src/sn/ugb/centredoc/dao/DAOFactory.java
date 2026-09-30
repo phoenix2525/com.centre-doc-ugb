@@ -17,6 +17,7 @@ public class DAOFactory {
     private static UtilisateurDAO utilisateurDAO;
     private static DocumentDAO documentDAO;
     private static TelechargementDAO telechargementDAO;
+    private static DemandeAccesDAO demandeAccesDAO;
 
     private static synchronized void init() {
         if (!initialized) {
@@ -34,11 +35,13 @@ public class DAOFactory {
             utilisateurDAO = new UtilisateurDAOJdbc();
             documentDAO = new DocumentDAOJdbc();
             telechargementDAO = new TelechargementDAOJdbc();
+            demandeAccesDAO = new DemandeAccesDAOJdbc();
         } else {
             ufrDAO = new UfrDAOMemory();
             utilisateurDAO = new UtilisateurDAOMemory();
             documentDAO = new DocumentDAOMemory();
             telechargementDAO = new TelechargementDAOMemory();
+            demandeAccesDAO = new DemandeAccesDAOMemory();
         }
     }
 
@@ -65,5 +68,10 @@ public class DAOFactory {
     public static TelechargementDAO getTelechargementDAO() {
         init();
         return telechargementDAO;
+    }
+
+    public static DemandeAccesDAO getDemandeAccesDAO() {
+        init();
+        return demandeAccesDAO;
     }
 }
